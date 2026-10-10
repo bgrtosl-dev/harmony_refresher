@@ -1,0 +1,16 @@
+{
+  "name": "Tonality & Cadence Navigator",
+  "short_name": "Tonality",
+  "description": "An interactive navigator for scales, tonality, and chord cadences.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
