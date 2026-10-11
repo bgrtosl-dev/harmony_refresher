@@ -92,6 +92,20 @@
             min-width: 40px;
         }
 
+        .related-tonalities-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            justify-content: flex-start;
+            margin-top: 4px;
+        }
+
+        .btn-related {
+            background-color: #4b5563;
+            font-size: 0.8rem;
+            padding: 4px 10px;
+        }
+
         .section-label {
             font-size: 1rem;
             font-weight: 600;
@@ -151,6 +165,9 @@
             <button id="btn-p1" class="btn-shift">+</button>
             <button id="btn-p2" class="btn-shift">++</button>
         </div>
+
+        <!-- Related Tonalities Buttons Container -->
+        <div id="related-tonalities-container" class="related-tonalities-group"></div>
     </div>
 
     <!-- Music Rendering Containers -->
@@ -272,6 +289,33 @@
             });
         }
         return notes;
+    }
+
+    function getMajorScalePitches(accCount) {
+        const majRootLetter = ((accCount * 4) % 7 + 7) % 7;
+        const pitches = [];
+        for (let i = 0; i < 7; i++) {
+            const lIdx = (majRootLetter + i) % 7;
+            const acc = getKeySignatureAccidental(lIdx, accCount);
+            pitches.push(LETTERS[lIdx].toUpperCase() + acc);
+        }
+        return pitches;
+    }
+
+    function getHarmonicMinorPitches(accCount) {
+        const majRootLetter = ((accCount * 4) % 7 + 7) % 7;
+        const minRootLetter = (majRootLetter + 5) % 7;
+        const pitches = [];
+        for (let i = 0; i < 7; i++) {
+            const lIdx = (minRootLetter + i) % 7;
+            let acc = getKeySignatureAccidental(lIdx, accCount);
+            if (i === 6) {
+                acc = getRaisedAccidental(lIdx, accCount);
+                if (acc === "n") acc = "";
+            }
+            pitches.push(LETTERS[lIdx].toUpperCase() + acc);
+        }
+        return pitches;
     }
 
     function generateMelodicMinorUp(minRootLetterIdx, accCount, show7ths) {
@@ -558,6 +602,88 @@
         return currentY;
     }
 
+    // =========================================================================
+    // RELATED TONALITIES (JS Translation of Python method)
+    // =========================================================================
+
+    function renderRelatedTonalities() {
+        const container = document.getElementById("related-tonalities-container");
+        if (!container) return;
+        container.innerHTML = "";
+
+        const currentScalePitches = getMajorScalePitches(currentAccidentals);
+        const selfPitchesSet = new Set(currentScalePitches);
+
+        const targets = [];
+
+        // 1. Relative minor of current key
+        targets.push({
+            name: KEY_NAMES[currentAccidentals][1] + "min",
+            key_sig: currentAccidentals,
+            pitches: getHarmonicMinorPitches(currentAccidentals)
+        });
+
+        // 2. key_sig - 1 (if exists)
+        const prevAcc = currentAccidentals - 1;
+        if (prevAcc >= -7) {
+            targets.push({
+                name: KEY_NAMES[prevAcc][0] + "maj",
+                key_sig: prevAcc,
+                pitches: getMajorScalePitches(prevAcc)
+            });
+            targets.push({
+                name: KEY_NAMES[prevAcc][1] + "min",
+                key_sig: prevAcc,
+                pitches: getHarmonicMinorPitches(prevAcc)
+            });
+        }
+
+        // 3. key_sig + 1 (if exists)
+        const nextAcc = currentAccidentals + 1;
+        if (nextAcc <= 7) {
+            targets.push({
+                name: KEY_NAMES[nextAcc][0] + "maj",
+                key_sig: nextAcc,
+                pitches: getMajorScalePitches(nextAcc)
+            });
+            targets.push({
+                name: KEY_NAMES[nextAcc][1] + "min",
+                key_sig: nextAcc,
+                pitches: getHarmonicMinorPitches(nextAcc)
+            });
+        }
+
+        const gui_nt = (discarded, added, scale, key_sig) => ({ discarded, added, scale, key_sig });
+
+        const widgets = [];
+        for (const target of targets) {
+            const targetPitchesSet = new Set(target.pitches);
+
+            const dcrd = [...selfPitchesSet].filter(x => !targetPitchesSet.has(x));
+            const newP = [...targetPitchesSet].filter(x => !selfPitchesSet.has(x));
+
+            const discarded = dcrd.sort().join(',').replace(/##/g, 'x');
+            const added = newP.sort().join(',').replace(/##/g, 'x');
+            const scaleName = target.name.replace(/##/g, 'x');
+
+            widgets.push(gui_nt(discarded, added, scaleName, target.key_sig));
+        }
+
+        widgets.forEach(w => {
+            const btn = document.createElement("button");
+            btn.className = "btn-related";
+            btn.textContent = `${w.scale}: ${w.discarded}->${w.added}`;
+            btn.title = `Discarded: [${w.discarded}], Added: [${w.added}]`;
+            btn.addEventListener("click", () => {
+                currentAccidentals = w.key_sig;
+                const select = document.getElementById("key-select");
+                if (select) select.value = w.key_sig;
+                renderAll();
+            });
+            container.appendChild(btn);
+        });
+    }
+
     function renderAll() {
         if (typeof Vex === 'undefined' || !Vex.Flow) return;
 
@@ -643,6 +769,9 @@
         if (cadSvg) {
             cadSvg.setAttribute("height", nextY + 10);
         }
+
+        // Render Related Tonalities Buttons
+        renderRelatedTonalities();
     }
 
     function initUI() {
