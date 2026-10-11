@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tonality-navigator-v3';
+const CACHE_NAME = 'tonality-navigator-v4';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
