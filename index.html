@@ -34,7 +34,7 @@
         }
 
         .container {
-            max-width: 1000px;
+            max-width: 800px;
             margin: 0 auto;
         }
 
@@ -87,23 +87,46 @@
             opacity: 0.9;
         }
 
-        .btn-shift {
-            background-color: #4b5563;
-            min-width: 40px;
+        /* 3-Column Grid Layout */
+        .shift-grid {
+            display: grid;
+            grid-template-columns: 50px max-content 1fr;
+            row-gap: 8px;
+            column-gap: 8px;
+            align-items: center;
+            margin-top: 4px;
         }
 
-        .related-tonalities-group {
+        .btn-shift {
+            background-color: #4b5563;
+            width: 100%;
+            text-align: center;
+            padding: 6px 0;
+            box-sizing: border-box;
+        }
+
+        .shift-placeholder {
+            width: 100%;
+            height: 33px;
+        }
+
+        .target-slot {
             display: flex;
+            align-items: center;
+        }
+
+        .controls-top-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
             flex-wrap: wrap;
-            gap: 6px;
-            justify-content: flex-start;
-            margin-top: 4px;
         }
 
         .btn-related {
             background-color: #4b5563;
-            font-size: 0.8rem;
-            padding: 4px 10px;
+            font-size: 0.93rem;
+            padding: 6px 12px;
+            white-space: nowrap;
         }
 
         .section-label {
@@ -123,11 +146,19 @@
             margin-bottom: 12px;
             overflow: hidden;
             box-sizing: border-box;
+            max-width: 100%;
         }
 
         .score-box svg {
             display: block;
             margin: 0 auto;
+            max-width: 100%;
+        }
+
+        @media (orientation: landscape) {
+            .container {
+                max-width: 700px;
+            }
         }
     </style>
 </head>
@@ -151,26 +182,41 @@
         Harmony Refresher
     </h1>
 
-    <!-- Navigation Controls -->
     <div class="controls-card">
-        <div class="control-group" style="justify-content: flex-start;">
+        <div class="control-group controls-top-row">
             <label for="key-select"><strong>Key Signature:</strong></label>
             <select id="key-select"></select>
             <button id="btn-toggle-sevenths">7th Chords</button>
         </div>
 
-        <div class="control-group" style="justify-content: flex-start;">
+        <div class="shift-grid">
+            <!-- -- Row -->
             <button id="btn-m2" class="btn-shift">--</button>
-            <button id="btn-m1" class="btn-shift">-</button>
-            <button id="btn-p1" class="btn-shift">+</button>
-            <button id="btn-p2" class="btn-shift">++</button>
-        </div>
+            <div id="target-m2-0" class="target-slot"></div>
+            <div id="target-m2-1" class="target-slot"></div>
 
-        <!-- Related Tonalities Buttons Container -->
-        <div id="related-tonalities-container" class="related-tonalities-group"></div>
+            <!-- - Row -->
+            <button id="btn-m1" class="btn-shift">-</button>
+            <div id="target-m1-0" class="target-slot"></div>
+            <div id="target-m1-1" class="target-slot"></div>
+
+            <!-- Relative Minor Placeholder Row -->
+            <div class="shift-placeholder"></div>
+            <div id="target-relmin-0" class="target-slot"></div>
+            <div id="target-relmin-1" class="target-slot"></div>
+
+            <!-- + Row -->
+            <button id="btn-p1" class="btn-shift">+</button>
+            <div id="target-p1-0" class="target-slot"></div>
+            <div id="target-p1-1" class="target-slot"></div>
+
+            <!-- ++ Row -->
+            <button id="btn-p2" class="btn-shift">++</button>
+            <div id="target-p2-0" class="target-slot"></div>
+            <div id="target-p2-1" class="target-slot"></div>
+        </div>
     </div>
 
-    <!-- Music Rendering Containers -->
     <div class="section-label" id="label-major">Major Scale</div>
     <div id="major-score" class="score-box"></div>
 
@@ -184,20 +230,17 @@
     <div id="cadences-score" class="score-box"></div>
 </div>
 
-<!-- QR Modal -->
 <div id="qr-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000;">
-    <div style="background: white; padding: 20px; border-radius: 12px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 280px;">
-        <p style="margin-top: 0; font-weight: 600; font-size: 1rem;">Harmony Refresher QR Code</p>
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://bgrtosl-dev.github.io/harmony_refresher/" alt="QR Code" style="display: block; margin: 0 auto 12px auto; width: 200px; height: 200px;">
-        <button id="close-qr-modal" style="padding: 6px 16px;">Close</button>
+    <div style="background: white; padding: 20px; border-radius: 12px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 260px;">
+        <p style="margin-top: 0; margin-bottom: 10px; font-weight: 600; font-size: 0.95rem;">Harmony Refresher app</p>
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=https://bgrtosl-dev.github.io/harmony_refresher/" alt="QR Code" style="display: block; margin: 0 auto 10px auto; width: 180px; height: 180px;">
+        <div style="font-size: 0.65rem; color: #475569; word-break: break-all; font-weight: 500;">
+            <a href="https://bgrtosl-dev.github.io/harmony_refresher/" target="_blank" style="color: var(--primary-color); text-decoration: none;">https://bgrtosl-dev.github.io/harmony_refresher/</a>
+        </div>
     </div>
 </div>
 
 <script>
-    // =========================================================================
-    // CONFIGURATION & MUSIC THEORY CONSTANTS
-    // =========================================================================
-
     const LETTERS = ['c', 'd', 'e', 'f', 'g', 'a', 'b'];
 
     const KEY_NAMES = {
@@ -210,7 +253,6 @@
     const SHARP_ORDER = [3, 0, 4, 1, 5, 2, 6];
     const FLAT_ORDER = [6, 2, 5, 1, 4, 0, 3];
 
-    // Scale Degree Triad & 7th Labels
     const MAJOR_TRIADS = ["I", "ii", "iii", "IV", "V", "vi", "vii°"];
     const MAJOR_SEVENTHS = ["Imaj7", "ii7", "iii7", "IVmaj7", "V7", "vi7", "m7b5"];
 
@@ -222,7 +264,6 @@
 
     const CADENCE_TITLES = ["Authentic Cadence", "Plagal Cadence", "Deceptive Cadence", "Half Cadence"];
 
-    // Layout & Rendering Settings
     const CONFIG = {
         SCALE_BOX_HEIGHT: 185,
         CADENCE_MAX_BAR_WIDTH: 250,
@@ -230,10 +271,6 @@
         CADENCE_COL_GAP: 24,
         CADENCE_CHORD_FORMAT_OFFSET: 85
     };
-
-    // =========================================================================
-    // STATE & HELPERS
-    // =========================================================================
 
     let currentAccidentals = 0;
     let showSevenths = false;
@@ -267,10 +304,6 @@
         if (rootLetterIdx >= 0 && rootLetterIdx <= 5) return 4;
         return 3;
     }
-
-    // =========================================================================
-    // SCALE GENERATION (Strictly 7 notes)
-    // =========================================================================
 
     function generateMajorScale(rootLetterIdx, show7ths) {
         const notes = [];
@@ -361,12 +394,8 @@
             }
             notes.push(noteObj);
         }
-        return notes; // Ascending harmonic minor
+        return notes;
     }
-
-    // =========================================================================
-    // EXACT PYTHON CADENCE DEFINITIONS & TRANSPOSITION
-    // =========================================================================
 
     function transposeNote(noteStr, degreeShift) {
         const parts = noteStr.split("/");
@@ -384,7 +413,6 @@
     function buildPythonCadenceChord(seqList, label, inv, degreeShift, customAccs = null) {
         let keys = seqList.map(n => transposeNote(n, degreeShift));
 
-        // Ensure lowest note is always >= A3 (weight 26)
         const letterMap = { c: 0, d: 1, e: 2, f: 3, g: 4, a: 5, b: 6 };
         function getWeight(k) {
             const parts = k.split("/");
@@ -393,7 +421,7 @@
             return oct * 7 + (letterMap[lName] || 0);
         }
 
-        const A3_WEIGHT = 3 * 7 + 5; // A3
+        const A3_WEIGHT = 3 * 7 + 5;
         let minW = Math.min(...keys.map(getWeight));
         while (minW < A3_WEIGHT) {
             keys = keys.map(k => {
@@ -474,10 +502,6 @@
             min_cadences: minCadences
         };
     }
-
-    // =========================================================================
-    // VEXFLOW DRAWING LOGIC
-    // =========================================================================
 
     function drawBeamedMeasure(ctx, stave, notesData) {
         const { StaveNote, Accidental, Voice, Formatter, Beam } = Vex.Flow;
@@ -602,63 +626,80 @@
         return currentY;
     }
 
-    // =========================================================================
-    // RELATED TONALITIES (JS Translation of Python method)
-    // =========================================================================
+    function createRelatedButton(w) {
+        const btn = document.createElement("button");
+        btn.className = "btn-related";
+        btn.textContent = `${w.scale}: ${w.discarded} ⇒ ${w.added}`;
+        btn.title = `Discarded: [${w.discarded}], Added: [${w.added}]`;
+        btn.addEventListener("click", () => {
+            currentAccidentals = w.key_sig;
+            const select = document.getElementById("key-select");
+            if (select) select.value = w.key_sig;
+            renderAll();
+        });
+        return btn;
+    }
 
     function renderRelatedTonalities() {
-        const container = document.getElementById("related-tonalities-container");
-        if (!container) return;
-        container.innerHTML = "";
-
         const currentScalePitches = getMajorScalePitches(currentAccidentals);
         const selfPitchesSet = new Set(currentScalePitches);
 
-        const targets = [];
+        const getWidgetsForAcc = (acc) => {
+            if (acc < -7 || acc > 7) return [];
+            const targets = [
+                {
+                    name: KEY_NAMES[acc][0] + "maj",
+                    key_sig: acc,
+                    pitches: getMajorScalePitches(acc)
+                },
+                {
+                    name: KEY_NAMES[acc][1] + "min",
+                    key_sig: acc,
+                    pitches: getHarmonicMinorPitches(acc)
+                }
+            ];
+            const widgets = [];
+            for (const target of targets) {
+                const targetPitchesSet = new Set(target.pitches);
+                const dcrd = [...selfPitchesSet].filter(x => !targetPitchesSet.has(x));
+                const newP = [...targetPitchesSet].filter(x => !selfPitchesSet.has(x));
 
-        // 1. Relative minor of current key
-        targets.push({
-            name: KEY_NAMES[currentAccidentals][1] + "min",
-            key_sig: currentAccidentals,
-            pitches: getHarmonicMinorPitches(currentAccidentals)
-        });
+                const discarded = dcrd.sort().join(',').replace(/##/g, 'x');
+                const added = newP.sort().join(',').replace(/##/g, 'x');
+                const scaleName = target.name.replace(/##/g, 'x');
+                widgets.push({ discarded, added, scale: scaleName, key_sig: target.key_sig });
+            }
+            return widgets;
+        };
 
-        // 2. key_sig - 1 (if exists)
-        const prevAcc = currentAccidentals - 1;
-        if (prevAcc >= -7) {
-            targets.push({
-                name: KEY_NAMES[prevAcc][0] + "maj",
-                key_sig: prevAcc,
-                pitches: getMajorScalePitches(prevAcc)
-            });
-            targets.push({
-                name: KEY_NAMES[prevAcc][1] + "min",
-                key_sig: prevAcc,
-                pitches: getHarmonicMinorPitches(prevAcc)
-            });
-        }
+        const renderRowSlots = (prefix, widgets) => {
+            const slot0 = document.getElementById(`${prefix}-0`);
+            const slot1 = document.getElementById(`${prefix}-1`);
+            if (slot0) slot0.innerHTML = "";
+            if (slot1) slot1.innerHTML = "";
 
-        // 3. key_sig + 1 (if exists)
-        const nextAcc = currentAccidentals + 1;
-        if (nextAcc <= 7) {
-            targets.push({
-                name: KEY_NAMES[nextAcc][0] + "maj",
-                key_sig: nextAcc,
-                pitches: getMajorScalePitches(nextAcc)
-            });
-            targets.push({
-                name: KEY_NAMES[nextAcc][1] + "min",
-                key_sig: nextAcc,
-                pitches: getHarmonicMinorPitches(nextAcc)
-            });
-        }
+            if (widgets[0] && slot0) {
+                slot0.appendChild(createRelatedButton(widgets[0]));
+            }
+            if (widgets[1] && slot1) {
+                slot1.appendChild(createRelatedButton(widgets[1]));
+            }
+        };
 
-        const gui_nt = (discarded, added, scale, key_sig) => ({ discarded, added, scale, key_sig });
+        renderRowSlots("target-m2", getWidgetsForAcc(currentAccidentals - 2));
+        renderRowSlots("target-m1", getWidgetsForAcc(currentAccidentals - 1));
 
-        const widgets = [];
-        for (const target of targets) {
+        const relMinSlot0 = document.getElementById("target-relmin-0");
+        const relMinSlot1 = document.getElementById("target-relmin-1");
+        if (relMinSlot0) relMinSlot0.innerHTML = "";
+        if (relMinSlot1) relMinSlot1.innerHTML = "";
+        if (relMinSlot0) {
+            const target = {
+                name: KEY_NAMES[currentAccidentals][1] + "min",
+                key_sig: currentAccidentals,
+                pitches: getHarmonicMinorPitches(currentAccidentals)
+            };
             const targetPitchesSet = new Set(target.pitches);
-
             const dcrd = [...selfPitchesSet].filter(x => !targetPitchesSet.has(x));
             const newP = [...targetPitchesSet].filter(x => !selfPitchesSet.has(x));
 
@@ -666,22 +707,16 @@
             const added = newP.sort().join(',').replace(/##/g, 'x');
             const scaleName = target.name.replace(/##/g, 'x');
 
-            widgets.push(gui_nt(discarded, added, scaleName, target.key_sig));
+            relMinSlot0.appendChild(createRelatedButton({
+                scale: scaleName,
+                discarded: discarded,
+                added: added,
+                key_sig: target.key_sig
+            }));
         }
 
-        widgets.forEach(w => {
-            const btn = document.createElement("button");
-            btn.className = "btn-related";
-            btn.textContent = `${w.scale}: ${w.discarded} ⇒ ${w.added}`;
-            btn.title = `Discarded: [${w.discarded}], Added: [${w.added}]`;
-            btn.addEventListener("click", () => {
-                currentAccidentals = w.key_sig;
-                const select = document.getElementById("key-select");
-                if (select) select.value = w.key_sig;
-                renderAll();
-            });
-            container.appendChild(btn);
-        });
+        renderRowSlots("target-p1", getWidgetsForAcc(currentAccidentals + 1));
+        renderRowSlots("target-p2", getWidgetsForAcc(currentAccidentals + 2));
     }
 
     function renderAll() {
@@ -691,7 +726,6 @@
         const majName = keyInfo[0];
         const minName = keyInfo[1];
 
-        // Update section titles with selected tonality
         document.getElementById("label-major").textContent = `${majName} Major Scale`;
         document.getElementById("label-harmonic-minor").textContent = `${minName} Harmonic Minor Scale`;
         document.getElementById("label-melodic-minor").textContent = `${minName} Melodic Minor Scale`;
@@ -701,10 +735,9 @@
         const majDiv = document.getElementById("major-score");
         if (!majDiv) return;
         majDiv.innerHTML = "";
-        const availWidth = Math.max(majDiv.clientWidth - 10, 320);
+        const availWidth = Math.min(Math.max(majDiv.clientWidth - 10, 320), 750);
         const scaleWidth = availWidth - 20;
 
-        // 1. Major Scale
         const renderer1 = new Vex.Flow.Renderer(majDiv, Vex.Flow.Renderer.Backends.SVG);
         renderer1.resize(availWidth, CONFIG.SCALE_BOX_HEIGHT);
         const ctx1 = renderer1.getContext();
@@ -714,7 +747,6 @@
         sMaj.setContext(ctx1).draw();
         drawBeamedMeasure(ctx1, sMaj, data.maj_scale);
 
-        // 2. Harmonic Minor Scale Block (Ascending)
         const harDiv = document.getElementById("harmonic-minor-score");
         if (harDiv) {
             harDiv.innerHTML = "";
@@ -728,7 +760,6 @@
             drawBeamedMeasure(ctxHar, sHar, data.harmonic_asc);
         }
 
-        // 3. Melodic Minor Scale Block
         const melDiv = document.getElementById("melodic-minor-score");
         if (melDiv) {
             melDiv.innerHTML = "";
@@ -742,7 +773,6 @@
             drawBeamedMeasure(ctxMel, sMel, data.min_up);
         }
 
-        // 4. Cadences
         const cadDiv = document.getElementById("cadences-score");
         if (!cadDiv) return;
         cadDiv.innerHTML = "";
@@ -770,7 +800,6 @@
             cadSvg.setAttribute("height", nextY + 10);
         }
 
-        // Render Related Tonalities Buttons
         renderRelatedTonalities();
     }
 
@@ -812,16 +841,11 @@
             renderAll();
         });
 
-        // QR Modal events
         const qrBtn = document.getElementById("qr-btn");
         const qrModal = document.getElementById("qr-modal");
-        const closeQrModal = document.getElementById("close-qr-modal");
         if (qrBtn && qrModal) {
             qrBtn.addEventListener("click", () => {
                 qrModal.style.display = "flex";
-            });
-            closeQrModal.addEventListener("click", () => {
-                qrModal.style.display = "none";
             });
             qrModal.addEventListener("click", (e) => {
                 if (e.target === qrModal) {
