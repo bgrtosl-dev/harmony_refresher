@@ -174,11 +174,11 @@
     <div class="section-label" id="label-major">Major Scale</div>
     <div id="major-score" class="score-box"></div>
 
-    <div class="section-label" id="label-melodic-minor">Melodic Minor Scale</div>
-    <div id="melodic-minor-score" class="score-box"></div>
-
     <div class="section-label" id="label-harmonic-minor">Harmonic Minor Scale</div>
     <div id="harmonic-minor-score" class="score-box"></div>
+
+    <div class="section-label" id="label-melodic-minor">Melodic Minor Scale</div>
+    <div id="melodic-minor-score" class="score-box"></div>
 
     <div class="section-label">Cadences</div>
     <div id="cadences-score" class="score-box"></div>
@@ -297,7 +297,7 @@
         for (let i = 0; i < 7; i++) {
             const lIdx = (majRootLetter + i) % 7;
             const acc = getKeySignatureAccidental(lIdx, accCount);
-            pitches.push(LETTERS[lIdx].toUpperCase() + acc);
+            pitches.push((LETTERS[lIdx].toUpperCase() + acc).replace(/##/g, 'x'));
         }
         return pitches;
     }
@@ -313,7 +313,7 @@
                 acc = getRaisedAccidental(lIdx, accCount);
                 if (acc === "n") acc = "";
             }
-            pitches.push(LETTERS[lIdx].toUpperCase() + acc);
+            pitches.push((LETTERS[lIdx].toUpperCase() + acc).replace(/##/g, 'x'));
         }
         return pitches;
     }
@@ -361,7 +361,7 @@
             }
             notes.push(noteObj);
         }
-        return [notes[0], ...notes.slice(1).reverse()];
+        return notes; // Ascending harmonic minor
     }
 
     // =========================================================================
@@ -419,7 +419,7 @@
 
         const majScale = generateMajorScale(majRootLetter, show7ths);
         const minUp = generateMelodicMinorUp(minRootLetter, accCount, show7ths);
-        const minDown = generateHarmonicMinorScale(minRootLetter, accCount, show7ths);
+        const harmonicAsc = generateHarmonicMinorScale(minRootLetter, accCount, show7ths);
 
         const majDegreeShift = majRootLetter;
         const minDegreeShift = (minRootLetter - 5 + 7) % 7;
@@ -469,7 +469,7 @@
             key_sig: majName,
             maj_scale: majScale,
             min_up: minUp,
-            min_down: minDown,
+            harmonic_asc: harmonicAsc,
             maj_cadences: majCadences,
             min_cadences: minCadences
         };
@@ -693,8 +693,8 @@
 
         // Update section titles with selected tonality
         document.getElementById("label-major").textContent = `${majName} Major Scale`;
-        document.getElementById("label-melodic-minor").textContent = `${minName} Melodic Minor Scale`;
         document.getElementById("label-harmonic-minor").textContent = `${minName} Harmonic Minor Scale`;
+        document.getElementById("label-melodic-minor").textContent = `${minName} Melodic Minor Scale`;
 
         const data = computeKeyData(currentAccidentals, showSevenths);
 
@@ -714,7 +714,21 @@
         sMaj.setContext(ctx1).draw();
         drawBeamedMeasure(ctx1, sMaj, data.maj_scale);
 
-        // 2. Melodic Minor Scale Block
+        // 2. Harmonic Minor Scale Block (Ascending)
+        const harDiv = document.getElementById("harmonic-minor-score");
+        if (harDiv) {
+            harDiv.innerHTML = "";
+            const rendererHar = new Vex.Flow.Renderer(harDiv, Vex.Flow.Renderer.Backends.SVG);
+            rendererHar.resize(availWidth, CONFIG.SCALE_BOX_HEIGHT);
+            const ctxHar = rendererHar.getContext();
+
+            const sHar = new Vex.Flow.Stave(10, 15, scaleWidth);
+            sHar.addClef("treble").addKeySignature(data.key_sig);
+            sHar.setContext(ctxHar).draw();
+            drawBeamedMeasure(ctxHar, sHar, data.harmonic_asc);
+        }
+
+        // 3. Melodic Minor Scale Block
         const melDiv = document.getElementById("melodic-minor-score");
         if (melDiv) {
             melDiv.innerHTML = "";
@@ -726,20 +740,6 @@
             sMel.addClef("treble").addKeySignature(data.key_sig);
             sMel.setContext(ctxMel).draw();
             drawBeamedMeasure(ctxMel, sMel, data.min_up);
-        }
-
-        // 3. Harmonic Minor Scale Block
-        const harDiv = document.getElementById("harmonic-minor-score");
-        if (harDiv) {
-            harDiv.innerHTML = "";
-            const rendererHar = new Vex.Flow.Renderer(harDiv, Vex.Flow.Renderer.Backends.SVG);
-            rendererHar.resize(availWidth, CONFIG.SCALE_BOX_HEIGHT);
-            const ctxHar = rendererHar.getContext();
-
-            const sHar = new Vex.Flow.Stave(10, 15, scaleWidth);
-            sHar.addClef("treble").addKeySignature(data.key_sig);
-            sHar.setContext(ctxHar).draw();
-            drawBeamedMeasure(ctxHar, sHar, data.min_down);
         }
 
         // 4. Cadences
