@@ -1,4 +1,4 @@
-const CACHE_NAME = 'harmony-refresher-v6';
+const CACHE_NAME = 'harmony-refresher-v7';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
