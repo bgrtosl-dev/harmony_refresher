@@ -156,7 +156,7 @@
         <div class="control-group" style="justify-content: flex-start;">
             <label for="key-select"><strong>Key Signature:</strong></label>
             <select id="key-select"></select>
-            <button id="btn-toggle-sevenths">Show 7th Chords</button>
+            <button id="btn-toggle-sevenths">7th Chords</button>
         </div>
 
         <div class="control-group" style="justify-content: flex-start;">
@@ -672,7 +672,7 @@
         widgets.forEach(w => {
             const btn = document.createElement("button");
             btn.className = "btn-related";
-            btn.textContent = `${w.scale}: ${w.discarded}->${w.added}`;
+            btn.textContent = `${w.scale}: ${w.discarded} ⇒ ${w.added}`;
             btn.title = `Discarded: [${w.discarded}], Added: [${w.added}]`;
             btn.addEventListener("click", () => {
                 currentAccidentals = w.key_sig;
@@ -808,7 +808,7 @@
         const toggleBtn = document.getElementById("btn-toggle-sevenths");
         toggleBtn.addEventListener("click", () => {
             showSevenths = !showSevenths;
-            toggleBtn.textContent = showSevenths ? "Show Triads" : "Show 7th Chords";
+            toggleBtn.textContent = showSevenths ? "Triads" : "7th Chords";
             renderAll();
         });
 
