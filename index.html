@@ -51,10 +51,9 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             margin-bottom: 16px;
             display: flex;
-            flex-wrap: wrap;
+            flex-direction: column;
             gap: 12px;
-            align-items: center;
-            justify-content: space-between;
+            align-items: stretch;
         }
 
         .control-group {
@@ -117,24 +116,21 @@
 <body>
 
 <div class="container">
-    <h1>🎼 Tonality, Scale & Cadence Navigator</h1>
+    <h1>🎼 Tonality refresher</h1>
 
     <!-- Navigation Controls -->
     <div class="controls-card">
-        <div class="control-group">
+        <div class="control-group" style="justify-content: flex-start;">
             <label for="key-select"><strong>Key Signature:</strong></label>
             <select id="key-select"></select>
-        </div>
-
-        <div class="control-group">
-            <button id="btn-m2" class="btn-shift">-2</button>
-            <button id="btn-m1" class="btn-shift">-1</button>
-            <button id="btn-p1" class="btn-shift">+1</button>
-            <button id="btn-p2" class="btn-shift">+2</button>
-        </div>
-
-        <div class="control-group">
             <button id="btn-toggle-sevenths">Show 7th Chords</button>
+        </div>
+
+        <div class="control-group" style="justify-content: flex-start;">
+            <button id="btn-m2" class="btn-shift">--</button>
+            <button id="btn-m1" class="btn-shift">-</button>
+            <button id="btn-p1" class="btn-shift">+</button>
+            <button id="btn-p2" class="btn-shift">++</button>
         </div>
     </div>
 
@@ -154,8 +150,10 @@
 
 <script>
     // =========================================================================
-    // CONFIGURATION & MUSIC THEORY CONSTANTS (Aligned with Python Backend)
+    // CONFIGURATION & MUSIC THEORY CONSTANTS
     // =========================================================================
+
+    const LETTERS = ['c', 'd', 'e', 'f', 'g', 'a', 'b'];
 
     const KEY_NAMES = {
         0: ["C", "A"], 1: ["G", "E"], 2: ["D", "B"], 3: ["A", "F#"],
@@ -164,32 +162,33 @@
         "-5": ["Db", "Bb"], "-6": ["Gb", "Eb"], "-7": ["Cb", "Ab"]
     };
 
-    // VexFlow Key Signature mapping strings
-    const VEX_KEY_SIGS = {
-        0: "C", 1: "G", 2: "D", 3: "A", 4: "E", 5: "B", 6: "F#", 7: "C#",
-        "-1": "F", "-2": "Bb", "-3": "Eb", "-4": "Ab", "-5": "Db", "-6": "Gb", "-7": "Cb"
-    };
+    const SHARP_ORDER = [3, 0, 4, 1, 5, 2, 6];
+    const FLAT_ORDER = [6, 2, 5, 1, 4, 0, 3];
 
-    // Scale Degree Labels
-    const MAJOR_TRIADS = ["I", "ii", "iii", "IV", "V", "vi", "vii°", "I"];
-    const MAJOR_SEVENTHS = ["Imaj7", "ii7", "iii7", "IVmaj7", "V7", "vi7", "m7b5", "Imaj7"];
+    // Scale Degree Triad & 7th Labels
+    const MAJOR_TRIADS = ["I", "ii", "iii", "IV", "V", "vi", "vii°"];
+    const MAJOR_SEVENTHS = ["Imaj7", "ii7", "iii7", "IVmaj7", "V7", "vi7", "m7b5"];
 
-    const MINOR_TRIADS = ["i", "ii°", "III", "iv", "V", "VI", "vii°", "i"];
-    const MINOR_SEVENTHS = ["im(maj7)", "iiø7", "III+maj7", "iv7", "V7", "VImaj7", "vii°7", "im(maj7)"];
+    const MELODIC_MINOR_TRIADS = ["i", "ii", "III+", "IV", "V", "vi°", "vii°"];
+    const MELODIC_MINOR_SEVENTHS = ["im(maj7)", "ii7", "III+maj7", "IV7", "V7", "viø7", "viiø7"];
+
+    const HARMONIC_MINOR_TRIADS = ["i", "ii°", "III+", "iv", "V", "VI", "vii°"];
+    const HARMONIC_MINOR_SEVENTHS = ["im(maj7)", "iiø7", "III+maj7", "iv7", "V7", "VImaj7", "vii°7"];
 
     const CADENCE_TITLES = ["Authentic Cadence", "Plagal Cadence", "Deceptive Cadence", "Half Cadence"];
-
-    // Scale pitch letter sequences starting from C
-    const BASE_LETTERS = ['c', 'd', 'e', 'f', 'g', 'a', 'b'];
 
     // Layout & Rendering Settings
     const CONFIG = {
         SCALE_BOX_HEIGHT: 185,
         CADENCE_MAX_BAR_WIDTH: 250,
-        CADENCE_ROW_HEIGHT: 185,
+        CADENCE_ROW_HEIGHT: 210,
         CADENCE_COL_GAP: 24,
         CADENCE_CHORD_FORMAT_OFFSET: 85
     };
+
+    // =========================================================================
+    // STATE & HELPERS
+    // =========================================================================
 
     let currentAccidentals = 0;
     let showSevenths = false;
@@ -200,129 +199,202 @@
         return `${prefix} (${d[0]} / ${d[1]}m)`;
     }
 
+    function getKeySignatureAccidental(letterIdx, accCount) {
+        const lIdx = ((letterIdx % 7) + 7) % 7;
+        if (accCount > 0) {
+            if (SHARP_ORDER.slice(0, accCount).includes(lIdx)) return "#";
+        } else if (accCount < 0) {
+            if (FLAT_ORDER.slice(0, Math.abs(accCount)).includes(lIdx)) return "b";
+        }
+        return "";
+    }
+
+    function getRaisedAccidental(letterIdx, accCount) {
+        const keyAcc = getKeySignatureAccidental(letterIdx, accCount);
+        if (keyAcc === "b") return "n";
+        if (keyAcc === "") return "#";
+        if (keyAcc === "#") return "##";
+        return "#";
+    }
+
+    function getLowestBOctave(rootLetterIdx) {
+        if (rootLetterIdx === 6) return 3;
+        if (rootLetterIdx >= 0 && rootLetterIdx <= 5) return 4;
+        return 3;
+    }
+
     // =========================================================================
-    // ROBUST TONALITY & SCALE GENERATION ENGINE
+    // SCALE GENERATION (Strictly 7 notes)
     // =========================================================================
 
-    // Diatonic step intervals for Major and Minor scales
-    const MAJOR_STEPS = [0, 2, 4, 5, 7, 9, 11];
-    const MINOR_STEPS = [0, 2, 3, 5, 7, 8, 10]; // Natural minor basis
-
-    // Base pitch offsets for note letters in semitones from C
-    const LETTER_SEMITONES = { 'c': 0, 'd': 2, 'e': 4, 'f': 5, 'g': 7, 'a': 9, 'b': 11 };
-
-    function getScaleNotes(rootLetter, rootOctave, scaleType, accCount) {
-        // Generates 8 notes (octave repeated) with correct spellings and accidentals for VexFlow
-        const baseIndex = BASE_LETTERS.indexOf(rootLetter.toLowerCase());
-        const rootSemi = LETTER_SEMITONES[rootLetter.toLowerCase()] + (rootOctave * 12);
-        
-        let intervals = MAJOR_STEPS;
-        if (scaleType === 'melodic_up') intervals = [0, 2, 3, 5, 7, 9, 11]; // Raised 6th & 7th
-        if (scaleType === 'harmonic') intervals = [0, 2, 3, 5, 7, 8, 11];    // Raised 7th
-
+    function generateMajorScale(rootLetterIdx, show7ths) {
         const notes = [];
-        const labels = showSevenths ? (scaleType === 'major' ? MAJOR_SEVENTHS : MINOR_SEVENTHS) : (scaleType === 'major' ? MAJOR_TRIADS : MINOR_TRIADS);
+        const baseOct = getLowestBOctave(rootLetterIdx);
+        const labels = show7ths ? MAJOR_SEVENTHS : MAJOR_TRIADS;
 
-        for (let i = 0; i < 8; i++) {
-            const lIdx = (baseIndex + i) % 7;
-            const letter = BASE_LETTERS[lIdx];
-            
-            // Determine expected pitch in semitones
-            const targetSemiFromRoot = intervals[i % 7] + (Math.floor(i / 7) * 12);
-            let targetAbsoluteSemi = rootSemi + targetSemiFromRoot;
-
-            // Find closest spelling matching the diatonic letter name
-            let octave = Math.floor(targetAbsoluteSemi / 12);
-            let naturalSemi = LETTER_SEMITONES[letter] + (octave * 12);
-            let diff = targetAbsoluteSemi - naturalSemi;
-
-            // Adjust octave if wrapping around semitones
-            if (diff < -6) { octave++; naturalSemi += 12; diff += 12; }
-            else if (diff > 6) { octave--; naturalSemi -= 12; diff -= 12; }
-
-            let acc = "";
-            if (diff === 1) acc = "#";
-            else if (diff === 2) acc = "##";
-            else if (diff === -1) acc = "b";
-            else if (diff === -2) acc = "bb";
+        for (let i = 0; i < 7; i++) {
+            const totalL = rootLetterIdx + i;
+            const lIdx = totalL % 7;
+            let octave = baseOct + Math.floor(totalL / 7);
+            if (octave < 3 || (octave === 3 && lIdx < 6)) octave += 1;
 
             notes.push({
-                keys: [`${letter}/${octave}`],
-                acc: acc ? [acc] : [],
+                keys: [`${LETTERS[lIdx]}/${octave}`],
                 triad: labels[i]
             });
         }
         return notes;
     }
 
+    function generateMelodicMinorUp(minRootLetterIdx, accCount, show7ths) {
+        const notes = [];
+        const baseOct = getLowestBOctave(minRootLetterIdx);
+        const labels = show7ths ? MELODIC_MINOR_SEVENTHS : MELODIC_MINOR_TRIADS;
+
+        for (let i = 0; i < 7; i++) {
+            const totalL = minRootLetterIdx + i;
+            const lIdx = totalL % 7;
+            let octave = baseOct + Math.floor(totalL / 7);
+            if (octave < 3 || (octave === 3 && lIdx < 6)) octave += 1;
+
+            const noteObj = {
+                keys: [`${LETTERS[lIdx]}/${octave}`],
+                triad: labels[i]
+            };
+            if (i === 5 || i === 6) {
+                noteObj.acc = [getRaisedAccidental(lIdx, accCount)];
+            }
+            notes.push(noteObj);
+        }
+        return notes;
+    }
+
+    function generateHarmonicMinorScale(minRootLetterIdx, accCount, show7ths) {
+        const notes = [];
+        const baseOct = getLowestBOctave(minRootLetterIdx);
+        const labels = show7ths ? HARMONIC_MINOR_SEVENTHS : HARMONIC_MINOR_TRIADS;
+
+        for (let i = 0; i < 7; i++) {
+            const totalL = minRootLetterIdx + i;
+            const lIdx = totalL % 7;
+            let octave = baseOct + Math.floor(totalL / 7);
+            if (octave < 3 || (octave === 3 && lIdx < 6)) octave += 1;
+
+            const noteObj = {
+                keys: [`${LETTERS[lIdx]}/${octave}`],
+                triad: labels[i]
+            };
+            if (i === 6) {
+                noteObj.acc = [getRaisedAccidental(lIdx, accCount)];
+            }
+            notes.push(noteObj);
+        }
+        return [notes[0], ...notes.slice(1).reverse()];
+    }
+
+    // =========================================================================
+    // EXACT PYTHON CADENCE DEFINITIONS & TRANSPOSITION
+    // =========================================================================
+
+    function transposeNote(noteStr, degreeShift) {
+        const parts = noteStr.split("/");
+        const lName = parts[0][0];
+        const alt = parts[0].slice(1);
+        const oct = parseInt(parts[1], 10);
+
+        const currentLIdx = LETTERS.indexOf(lName);
+        const newLIdx = ((currentLIdx + degreeShift) % 7 + 7) % 7;
+        const octShift = Math.floor((currentLIdx + degreeShift) / 7);
+
+        return `${LETTERS[newLIdx]}${alt}/${oct + octShift}`;
+    }
+
+    function buildPythonCadenceChord(seqList, label, inv, degreeShift, customAccs = null) {
+        let keys = seqList.map(n => transposeNote(n, degreeShift));
+
+        // Ensure lowest note is always >= A3 (weight 26)
+        const letterMap = { c: 0, d: 1, e: 2, f: 3, g: 4, a: 5, b: 6 };
+        function getWeight(k) {
+            const parts = k.split("/");
+            const lName = parts[0][0].toLowerCase();
+            const oct = parseInt(parts[1], 10);
+            return oct * 7 + (letterMap[lName] || 0);
+        }
+
+        const A3_WEIGHT = 3 * 7 + 5; // A3
+        let minW = Math.min(...keys.map(getWeight));
+        while (minW < A3_WEIGHT) {
+            keys = keys.map(k => {
+                const parts = k.split("/");
+                const pitch = parts[0];
+                const oct = parseInt(parts[1], 10);
+                return `${pitch}/${oct + 1}`;
+            });
+            minW = Math.min(...keys.map(getWeight));
+        }
+
+        const res = { keys, label, inv };
+        if (customAccs) res.acc = customAccs;
+        return res;
+    }
+
     function computeKeyData(accCount, show7ths) {
         const keyInfo = KEY_NAMES[accCount];
         const majName = keyInfo[0];
-        const minName = keyInfo[1];
 
-        // Determine root letters based on circle of fifths position
-        // C=0, G=1, D=2, A=3, E=4, B=5, F#=6, C#=7, F=-1, Bb=-2, Eb=-3, Ab=-4, Db=-5, Gb=-6, Cb=-7
-        const majRoots = {
-            0: ['c', 4], 1: ['g', 4], 2: ['d', 4], 3: ['a', 4], 4: ['e', 4], 5: ['b', 4], 6: ['f#', 4], 7: ['c#', 4],
-            '-1': ['f', 4], '-2': ['bb', 3], '-3': ['eb', 4], '-4': ['ab', 3], '-5': ['db', 4], '-6': ['gb', 3], '-7': ['cb', 4]
-        };
-        const minRoots = {
-            0: ['a', 3], 1: ['e', 4], 2: ['b', 3], 3: ['f#', 4], 4: ['c#', 4], 5: ['g#', 3], 6: ['d#', 4], 7: ['a#', 3],
-            '-1': ['d', 4], '-2': ['g', 3], '-3': ['c', 4], '-4': ['f', 4], '-5': ['bb', 3], '-6': ['eb', 4], '-7': ['ab', 3]
-        };
+        const majRootLetter = ((accCount * 4) % 7 + 7) % 7;
+        const minRootLetter = (majRootLetter + 5) % 7;
 
-        const [majRootLet, majRootOct] = majRoots[accCount] || ['c', 4];
-        const [minRootLet, minRootOct] = minRoots[accCount] || ['a', 3];
+        const majScale = generateMajorScale(majRootLetter, show7ths);
+        const minUp = generateMelodicMinorUp(minRootLetter, accCount, show7ths);
+        const minDown = generateHarmonicMinorScale(minRootLetter, accCount, show7ths);
 
-        const majScale = getScaleNotes(majRootLet, majRootOct, 'major', accCount);
-        const minUp = getScaleNotes(minRootLet, minRootOct, 'melodic_up', accCount);
-        const minDown = getScaleNotes(minRootLet, minRootOct, 'harmonic', accCount);
-
-        // Cadence chord builder helper
-        const buildChord = (scaleNotes, indices, label) => {
-            const keys = [];
-            const accs = [];
-            indices.forEach(idx => {
-                const n = scaleNotes[idx];
-                keys.push(n.keys[0]);
-                accs.push(n.acc[0] || "");
-            });
-            const res = { keys, label };
-            if (accs.some(a => a !== "")) res.acc = accs;
-            return res;
-        };
-
-        // Standard cadence degree indices (0-based)
-        // Major: I=0, ii=1, iii=2, IV=3, V=4, vi=5, vii°=6
-        const majIdxs = show7ths ? { cadential: [4, 6, 1, 3], tonic: [0, 2, 4, 6], subdominant: [3, 5, 0, 2], submediant: [5, 7, 2, 4] } 
-                                 : { cadential: [4, 6, 1], tonic: [0, 2, 4], subdominant: [3, 5, 0], submediant: [5, 7, 2] };
-
-        const vLbl = show7ths ? "V7" : "V";
-        const iLbl = show7ths ? (majName.includes("b") || majName.includes("#") ? "Imaj7" : "Imaj7") : "I";
-        const ivLbl = show7ths ? "IVmaj7" : "IV";
-        const viLbl = show7ths ? "vi7" : "vi";
-
-        const minVLbl = show7ths ? "V7" : "V";
-        const minILbl = show7ths ? "im(maj7)" : "i";
-        const minIvLbl = show7ths ? "iv7" : "iv";
-        const minViLbl = show7ths ? "VImaj7" : "VI";
+        const majDegreeShift = majRootLetter;
+        const minDegreeShift = (minRootLetter - 5 + 7) % 7;
 
         const majCadences = [
-            [buildChord(majScale, majIdxs.cadential, vLbl), buildChord(majScale, majIdxs.tonic, iLbl)],
-            [buildChord(majScale, majIdxs.subdominant, ivLbl), buildChord(majScale, majIdxs.tonic, iLbl)],
-            [buildChord(majScale, majIdxs.cadential, vLbl), buildChord(majScale, majIdxs.submediant, viLbl)],
-            [buildChord(majScale, majIdxs.tonic, iLbl), buildChord(majScale, majIdxs.cadential, vLbl)]
+            [
+                buildPythonCadenceChord(["d/4", "g/4", "b/4"], "V", 2, majDegreeShift),
+                buildPythonCadenceChord(["c/4", "e/4", "g/4"], "I", 0, majDegreeShift)
+            ],
+            [
+                buildPythonCadenceChord(["c/4", "f/4", "a/4"], "IV", 2, majDegreeShift),
+                buildPythonCadenceChord(["c/4", "e/4", "g/4"], "I", 0, majDegreeShift)
+            ],
+            [
+                buildPythonCadenceChord(["g/3", "b/3", "d/4"], "V", 0, majDegreeShift),
+                buildPythonCadenceChord(["a/3", "c/4", "e/4"], "vi", 0, majDegreeShift)
+            ],
+            [
+                buildPythonCadenceChord(["e/4", "g/4", "c/5"], "I", 1, majDegreeShift),
+                buildPythonCadenceChord(["g/3", "b/3", "d/4"], "V", 0, majDegreeShift)
+            ]
         ];
 
+        const vAcc = ["", "", getRaisedAccidental(4, accCount)];
+        const vAccChord1 = ["", getRaisedAccidental(4, accCount), ""];
+
         const minCadences = [
-            [buildChord(minDown, majIdxs.cadential, minVLbl), buildChord(minDown, majIdxs.tonic, minILbl)],
-            [buildChord(minDown, majIdxs.subdominant, minIvLbl), buildChord(minDown, majIdxs.tonic, minILbl)],
-            [buildChord(minDown, majIdxs.cadential, minVLbl), buildChord(minDown, majIdxs.submediant, minViLbl)],
-            [buildChord(minDown, majIdxs.tonic, minILbl), buildChord(minDown, majIdxs.cadential, minVLbl)]
+            [
+                buildPythonCadenceChord(["b/3", "e/4", "g/4"], "V", 2, minDegreeShift, vAcc),
+                buildPythonCadenceChord(["a/3", "c/4", "e/4"], "i", 0, minDegreeShift)
+            ],
+            [
+                buildPythonCadenceChord(["a/3", "d/4", "f/4"], "iv", 2, minDegreeShift),
+                buildPythonCadenceChord(["a/3", "c/4", "e/4"], "i", 0, minDegreeShift)
+            ],
+            [
+                buildPythonCadenceChord(["e/3", "g/3", "b/3"], "V", 0, minDegreeShift, vAccChord1),
+                buildPythonCadenceChord(["f/3", "a/3", "c/4"], "VI", 0, minDegreeShift)
+            ],
+            [
+                buildPythonCadenceChord(["a/3", "c/4", "e/4"], "i", 0, minDegreeShift),
+                buildPythonCadenceChord(["b/3", "e/4", "g/4"], "V", 2, minDegreeShift, vAcc)
+            ]
         ];
 
         return {
-            key_sig: VEX_KEY_SIGS[accCount],
+            key_sig: majName,
             maj_scale: majScale,
             min_up: minUp,
             min_down: minDown,
@@ -332,7 +404,7 @@
     }
 
     // =========================================================================
-    // VEXFLOW RENDERING LOGIC
+    // VEXFLOW DRAWING LOGIC
     // =========================================================================
 
     function drawBeamedMeasure(ctx, stave, notesData) {
@@ -345,7 +417,7 @@
                 clef: "treble",
                 stem_direction: 1
             });
-            if (item.acc && item.acc.length > 0) {
+            if (item.acc) {
                 item.acc.forEach((a, i) => {
                     if (a) note.addModifier(new Accidental(a), i);
                 });
@@ -354,7 +426,7 @@
         });
 
         const beam = new Beam(notes);
-        const voice = new Voice({ num_beats: 4, beat_value: 4 }).setStrict(false).addTickables(notes);
+        const voice = new Voice({ num_beats: 3.5, beat_value: 4 }).setStrict(false).addTickables(notes);
 
         new Formatter().joinVoices([voice]).format([voice], stave.getWidth() - 90);
 
@@ -382,7 +454,7 @@
         const rowHeight = CONFIG.CADENCE_ROW_HEIGHT;
         const margin = 10;
         const colGap = CONFIG.CADENCE_COL_GAP;
-        
+
         const fullColWidth = Math.floor((availWidth - 20 - colGap) / 2);
         const barWidth = Math.min(CONFIG.CADENCE_MAX_BAR_WIDTH, fullColWidth);
 
@@ -414,27 +486,34 @@
                 });
 
                 const voice = new Vex.Flow.Voice({ num_beats: 8, beat_value: 4 }).setStrict(false).addTickables(chords);
-                
+
                 const availableFormatWidth = barWidth - CONFIG.CADENCE_CHORD_FORMAT_OFFSET;
                 new Vex.Flow.Formatter().joinVoices([voice]).format([voice], Math.max(availableFormatWidth, 40));
                 voice.draw(ctx, stave);
 
-                const labelY = stave.getYForLine(11.2);
+                const labelY = stave.getYForLine(8.8);
+                const bulletY = labelY + 14;
+
                 ctx.save();
                 ctx.setFont("sans-serif", 10, "bold");
                 ctx.textAlign = "center";
                 chords.forEach((chord, i) => {
-                    if (cadenceData[idx][i].label) {
-                        const text = cadenceData[idx][i].label;
+                    const chordData = cadenceData[idx][i];
+                    if (chordData.label) {
                         const x = chord.getAbsoluteX();
-                        ctx.fillText(text, x, labelY);
+                        ctx.fillText(chordData.label, x, labelY);
+
+                        if (chordData.inv && chordData.inv > 0) {
+                            const bullets = "•".repeat(chordData.inv);
+                            ctx.fillText(bullets, x, bulletY);
+                        }
                     }
                 });
                 ctx.restore();
             }
 
             if (r === 0) {
-                const midRowY = currentY + rowHeight - 25;
+                const midRowY = currentY + rowHeight - 35;
                 ctx.save();
                 ctx.beginPath();
                 ctx.setLineDash([4, 4]);
@@ -506,12 +585,12 @@
         cadDiv.innerHTML = "";
 
         const renderer3 = new Vex.Flow.Renderer(cadDiv, Vex.Flow.Renderer.Backends.SVG);
-        renderer3.resize(availWidth, 850);
+        renderer3.resize(availWidth, 950);
         const ctx3 = renderer3.getContext();
 
         let nextY = drawCadenceRow(ctx3, data.maj_cadences, 35, "Major", data.key_sig, availWidth);
 
-        const lineY = nextY - 10;
+        const lineY = nextY - 15;
         ctx3.save();
         ctx3.beginPath();
         ctx3.moveTo(10, lineY);
@@ -521,7 +600,7 @@
         ctx3.stroke();
         ctx3.restore();
 
-        nextY = drawCadenceRow(ctx3, data.min_cadences, lineY + 55, "Minor", data.key_sig, availWidth);
+        nextY = drawCadenceRow(ctx3, data.min_cadences, lineY + 60, "Minor", data.key_sig, availWidth);
 
         const cadSvg = cadDiv.querySelector("svg");
         if (cadSvg) {
@@ -575,13 +654,6 @@
         document.addEventListener('DOMContentLoaded', initUI);
     } else {
         initUI();
-    }
-
-    if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.protocol === 'http:')) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js')
-                .catch(err => console.log('Service Worker skipped or failed:', err));
-        });
     }
 </script>
 </body>
