@@ -42,6 +42,10 @@
             font-size: 1.4rem;
             margin-bottom: 14px;
             text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
 
         .controls-card {
@@ -116,7 +120,22 @@
 <body>
 
 <div class="container">
-    <h1>🎼 Tonality, Scale & Cadence Navigator</h1>
+    <h1>
+        <span id="qr-btn" style="cursor: pointer; display: inline-flex; align-items: center; vertical-align: middle;" title="Show QR Code">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+                <path d="M7 7h1v1H7z"></path>
+                <path d="M18 7h1v1h-1z"></path>
+                <path d="M18 18h1v1h-1z"></path>
+                <path d="M7 18h1v1H7z"></path>
+                <path d="M10 10h4v4h-4z"></path>
+            </svg>
+        </span>
+        Tonality, Scale & Cadence Navigator
+    </h1>
 
     <!-- Navigation Controls -->
     <div class="controls-card">
@@ -135,17 +154,26 @@
     </div>
 
     <!-- Music Rendering Containers -->
-    <div class="section-label">🎵 Major Scale</div>
+    <div class="section-label" id="label-major">Major Scale</div>
     <div id="major-score" class="score-box"></div>
 
-    <div class="section-label">🎵 Melodic Minor Scale</div>
+    <div class="section-label" id="label-melodic-minor">Melodic Minor Scale</div>
     <div id="melodic-minor-score" class="score-box"></div>
 
-    <div class="section-label">🎵 Harmonic Minor Scale</div>
+    <div class="section-label" id="label-harmonic-minor">Harmonic Minor Scale</div>
     <div id="harmonic-minor-score" class="score-box"></div>
 
-    <div class="section-label">🎹 Cadences</div>
+    <div class="section-label">Cadences</div>
     <div id="cadences-score" class="score-box"></div>
+</div>
+
+<!-- QR Modal -->
+<div id="qr-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000;">
+    <div style="background: white; padding: 20px; border-radius: 12px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 280px;">
+        <p style="margin-top: 0; font-weight: 600; font-size: 1rem;">Harmony Refresher QR Code</p>
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://bgrtosl-dev.github.io/harmony_refresher/" alt="QR Code" style="display: block; margin: 0 auto 12px auto; width: 200px; height: 200px;">
+        <button id="close-qr-modal" style="padding: 6px 16px;">Close</button>
+    </div>
 </div>
 
 <script>
@@ -533,6 +561,15 @@
     function renderAll() {
         if (typeof Vex === 'undefined' || !Vex.Flow) return;
 
+        const keyInfo = KEY_NAMES[currentAccidentals];
+        const majName = keyInfo[0];
+        const minName = keyInfo[1];
+
+        // Update section titles with selected tonality
+        document.getElementById("label-major").textContent = `${majName} Major Scale`;
+        document.getElementById("label-melodic-minor").textContent = `${minName} Melodic Minor Scale`;
+        document.getElementById("label-harmonic-minor").textContent = `${minName} Harmonic Minor Scale`;
+
         const data = computeKeyData(currentAccidentals, showSevenths);
 
         const majDiv = document.getElementById("major-score");
@@ -645,6 +682,24 @@
             toggleBtn.textContent = showSevenths ? "Show Triads" : "Show 7th Chords";
             renderAll();
         });
+
+        // QR Modal events
+        const qrBtn = document.getElementById("qr-btn");
+        const qrModal = document.getElementById("qr-modal");
+        const closeQrModal = document.getElementById("close-qr-modal");
+        if (qrBtn && qrModal) {
+            qrBtn.addEventListener("click", () => {
+                qrModal.style.display = "flex";
+            });
+            closeQrModal.addEventListener("click", () => {
+                qrModal.style.display = "none";
+            });
+            qrModal.addEventListener("click", (e) => {
+                if (e.target === qrModal) {
+                    qrModal.style.display = "none";
+                }
+            });
+        }
 
         window.addEventListener("resize", renderAll);
         renderAll();
