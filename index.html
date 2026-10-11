@@ -186,7 +186,7 @@
         <div class="control-group controls-top-row">
             <label for="key-select"><strong>Key Signature:</strong></label>
             <select id="key-select"></select>
-            <button id="btn-toggle-sevenths">7th Chords</button>
+            <button id="btn-toggle-sevenths">7th</button>
         </div>
 
         <div class="shift-grid">
@@ -837,7 +837,7 @@
         const toggleBtn = document.getElementById("btn-toggle-sevenths");
         toggleBtn.addEventListener("click", () => {
             showSevenths = !showSevenths;
-            toggleBtn.textContent = showSevenths ? "Triads" : "7th Chords";
+            toggleBtn.textContent = showSevenths ? "Triads" : "7th";
             renderAll();
         });
 
