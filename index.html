@@ -38,10 +38,67 @@
             margin: 0 auto;
         }
 
+        .title-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 14px;
+            position: relative;
+        }
+
         h1 {
             font-size: 1.4rem;
-            margin-bottom: 14px;
+            margin: 0;
+        }
+
+        /* QR Code Hover Styles */
+        .qr-wrapper {
+            position: relative;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .qr-icon {
+            font-size: 1rem;
+            padding: 4px 8px;
+            background: #e2e8f0;
+            border-radius: 6px;
+            transition: background 0.2s;
+            user-select: none;
+        }
+
+        .qr-wrapper:hover .qr-icon {
+            background: #cbd5e1;
+        }
+
+        .qr-tooltip {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            margin-top: 8px;
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             text-align: center;
+            z-index: 100;
+            white-space: nowrap;
+            border: 1px solid var(--border-color);
+        }
+
+        .qr-tooltip p {
+            margin: 0 0 8px 0;
+            font-size: 0.75rem;
+            color: #4b5563;
+            font-weight: 600;
+        }
+
+        .qr-wrapper:hover .qr-tooltip {
+            display: block;
         }
 
         .controls-card {
@@ -116,7 +173,16 @@
 <body>
 
 <div class="container">
-    <h1>🎼 Tonality refresher</h1>
+    <div class="title-container">
+        <h1>🎼 Tonality & Cadence Navigator</h1>
+        <div class="qr-wrapper">
+            <span class="qr-icon" title="QR Code">📱 QR</span>
+            <div class="qr-tooltip">
+                <p>Scan to open App / Repo</p>
+                <img id="qr-code-img" src="" alt="QR Code" width="120" height="120">
+            </div>
+        </div>
+    </div>
 
     <!-- Navigation Controls -->
     <div class="controls-card">
@@ -312,7 +378,6 @@
     function buildPythonCadenceChord(seqList, label, inv, degreeShift, customAccs = null) {
         let keys = seqList.map(n => transposeNote(n, degreeShift));
 
-        // Ensure lowest note is always >= A3 (weight 26)
         const letterMap = { c: 0, d: 1, e: 2, f: 3, g: 4, a: 5, b: 6 };
         function getWeight(k) {
             const parts = k.split("/");
@@ -321,7 +386,7 @@
             return oct * 7 + (letterMap[lName] || 0);
         }
 
-        const A3_WEIGHT = 3 * 7 + 5; // A3
+        const A3_WEIGHT = 3 * 7 + 5;
         let minW = Math.min(...keys.map(getWeight));
         while (minW < A3_WEIGHT) {
             keys = keys.map(k => {
@@ -608,48 +673,21 @@
         }
     }
 
-    function initUI() {
-        const select = document.getElementById("key-select");
-        if (!select) return;
+function initUI() {
+        let targetUrl;
 
-        select.innerHTML = "";
-        for (let acc = -7; acc <= 7; acc++) {
-            const opt = document.createElement("option");
-            opt.value = acc;
-            opt.textContent = formatLabel(acc);
-            if (acc === currentAccidentals) opt.selected = true;
-            select.appendChild(opt);
+        // Check if we are running live on GitHub Pages
+        if (window.location.hostname.endsWith('github.io')) {
+            // Automatically uses the current live page/repo URL
+            targetUrl = window.location.href;
+        } else {
+            // Fallback for local testing (replace with your actual GitHub Pages URL)
+            targetUrl = "https://YOUR-GITHUB-USERNAME.github.io/YOUR-REPO-NAME/";
         }
 
-        select.addEventListener("change", (e) => {
-            currentAccidentals = parseInt(e.target.value, 10);
-            renderAll();
-        });
-
-        const setAcc = (val) => {
-            if (val >= -7 && val <= 7) {
-                currentAccidentals = val;
-                select.value = val;
-                renderAll();
-            }
-        };
-
-        document.getElementById("btn-m2").addEventListener("click", () => setAcc(currentAccidentals - 2));
-        document.getElementById("btn-m1").addEventListener("click", () => setAcc(currentAccidentals - 1));
-        document.getElementById("btn-p1").addEventListener("click", () => setAcc(currentAccidentals + 1));
-        document.getElementById("btn-p2").addEventListener("click", () => setAcc(currentAccidentals + 2));
-
-        const toggleBtn = document.getElementById("btn-toggle-sevenths");
-        toggleBtn.addEventListener("click", () => {
-            showSevenths = !showSevenths;
-            toggleBtn.textContent = showSevenths ? "Show Triads" : "Show 7th Chords";
-            renderAll();
-        });
-
-        window.addEventListener("resize", renderAll);
-        renderAll();
+        // Generate the QR code dynamically
+        document.getElementById("qr-code-img").src = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(targetUrl)}`;
     }
-
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initUI);
     } else {
