@@ -103,11 +103,14 @@
             text-align: center;
             padding: 6px 0;
             box-sizing: border-box;
+            min-height: 33px;
         }
 
-        .shift-placeholder {
-            width: 100%;
-            height: 33px;
+        .btn-shift-empty {
+            background-color: transparent !important;
+            border: none !important;
+            cursor: default !important;
+            box-shadow: none !important;
         }
 
         .target-slot {
@@ -127,6 +130,11 @@
             font-size: 0.93rem;
             padding: 6px 12px;
             white-space: nowrap;
+        }
+
+        .btn-related sub {
+            font-size: 0.75em;
+            bottom: -0.2em;
         }
 
         .section-label {
@@ -190,28 +198,28 @@
         </div>
 
         <div class="shift-grid">
-            <!-- -- Row -->
-            <button id="btn-m2" class="btn-shift">--</button>
+            <!-- -2 Row -->
+            <button id="btn-m2" class="btn-shift"></button>
             <div id="target-m2-0" class="target-slot"></div>
             <div id="target-m2-1" class="target-slot"></div>
 
-            <!-- - Row -->
-            <button id="btn-m1" class="btn-shift">-</button>
+            <!-- -1 Row -->
+            <button id="btn-m1" class="btn-shift"></button>
             <div id="target-m1-0" class="target-slot"></div>
             <div id="target-m1-1" class="target-slot"></div>
 
-            <!-- Relative Minor Placeholder Row -->
-            <div class="shift-placeholder"></div>
+            <!-- Current Key Signature Row (Middle) -->
+            <button id="btn-0" class="btn-shift"></button>
             <div id="target-relmin-0" class="target-slot"></div>
             <div id="target-relmin-1" class="target-slot"></div>
 
-            <!-- + Row -->
-            <button id="btn-p1" class="btn-shift">+</button>
+            <!-- +1 Row -->
+            <button id="btn-p1" class="btn-shift"></button>
             <div id="target-p1-0" class="target-slot"></div>
             <div id="target-p1-1" class="target-slot"></div>
 
-            <!-- ++ Row -->
-            <button id="btn-p2" class="btn-shift">++</button>
+            <!-- +2 Row -->
+            <button id="btn-p2" class="btn-shift"></button>
             <div id="target-p2-0" class="target-slot"></div>
             <div id="target-p2-1" class="target-slot"></div>
         </div>
@@ -275,10 +283,28 @@
     let currentAccidentals = 0;
     let showSevenths = false;
 
+    function formatUnicodeAccidentals(text) {
+        if (!text) return "";
+        let formatted = text
+            .replace(/##/g, '𝄪')
+            .replace(/bb/g, '𝄫')
+            .replace(/#/g, '♯')
+            .replace(/b/g, '♭');
+
+        formatted = formatted.replace(/maj/g, '<sub>maj</sub>').replace(/min/g, '<sub>min</sub>');
+        return formatted;
+    }
+
     function formatLabel(acc) {
         const d = KEY_NAMES[acc];
-        const prefix = acc > 0 ? `${acc}#` : (acc < 0 ? `${Math.abs(acc)}b` : "0");
+        const prefix = acc > 0 ? `${acc}♯` : (acc < 0 ? `${Math.abs(acc)}♭` : "0");
         return `${prefix} (${d[0]} / ${d[1]}m)`;
+    }
+
+    function formatAccidentalLabel(acc) {
+        if (acc === 0) return "";
+        if (acc > 0) return `${acc}♯`;
+        return `${Math.abs(acc)}♭`;
     }
 
     function getKeySignatureAccidental(letterIdx, accCount) {
@@ -629,8 +655,14 @@
     function createRelatedButton(w) {
         const btn = document.createElement("button");
         btn.className = "btn-related";
-        btn.textContent = `${w.scale}: ${w.discarded} ⇒ ${w.added}`;
+
+        const scaleText = formatUnicodeAccidentals(w.scale);
+        const discardedText = formatUnicodeAccidentals(w.discarded);
+        const addedText = formatUnicodeAccidentals(w.added);
+
+        btn.innerHTML = `${scaleText}: ${discardedText} ⇒ ${addedText}`;
         btn.title = `Discarded: [${w.discarded}], Added: [${w.added}]`;
+
         btn.addEventListener("click", () => {
             currentAccidentals = w.key_sig;
             const select = document.getElementById("key-select");
@@ -638,6 +670,30 @@
             renderAll();
         });
         return btn;
+    }
+
+    function setBtnState(btn, acc) {
+        if (!btn) return;
+        if (acc < -7 || acc > 7) {
+            btn.style.visibility = "hidden";
+            return;
+        }
+        btn.style.visibility = "visible";
+        const text = formatAccidentalLabel(acc);
+        btn.textContent = text;
+        if (acc === 0) {
+            btn.classList.add("btn-shift-empty");
+        } else {
+            btn.classList.remove("btn-shift-empty");
+        }
+    }
+
+    function updateShiftButtons() {
+        setBtnState(document.getElementById("btn-m2"), currentAccidentals - 2);
+        setBtnState(document.getElementById("btn-m1"), currentAccidentals - 1);
+        setBtnState(document.getElementById("btn-0"), currentAccidentals);
+        setBtnState(document.getElementById("btn-p1"), currentAccidentals + 1);
+        setBtnState(document.getElementById("btn-p2"), currentAccidentals + 2);
     }
 
     function renderRelatedTonalities() {
@@ -689,6 +745,7 @@
         renderRowSlots("target-m2", getWidgetsForAcc(currentAccidentals - 2));
         renderRowSlots("target-m1", getWidgetsForAcc(currentAccidentals - 1));
 
+        // Current Key Signature Row (middle row): Only shows relative minor
         const relMinSlot0 = document.getElementById("target-relmin-0");
         const relMinSlot1 = document.getElementById("target-relmin-1");
         if (relMinSlot0) relMinSlot0.innerHTML = "";
@@ -717,14 +774,16 @@
 
         renderRowSlots("target-p1", getWidgetsForAcc(currentAccidentals + 1));
         renderRowSlots("target-p2", getWidgetsForAcc(currentAccidentals + 2));
+
+        updateShiftButtons();
     }
 
     function renderAll() {
         if (typeof Vex === 'undefined' || !Vex.Flow) return;
 
         const keyInfo = KEY_NAMES[currentAccidentals];
-        const majName = keyInfo[0];
-        const minName = keyInfo[1];
+        const majName = formatUnicodeAccidentals(keyInfo[0]);
+        const minName = formatUnicodeAccidentals(keyInfo[1]);
 
         document.getElementById("label-major").textContent = `${majName} Major Scale`;
         document.getElementById("label-harmonic-minor").textContent = `${minName} Harmonic Minor Scale`;
@@ -831,6 +890,7 @@
 
         document.getElementById("btn-m2").addEventListener("click", () => setAcc(currentAccidentals - 2));
         document.getElementById("btn-m1").addEventListener("click", () => setAcc(currentAccidentals - 1));
+        document.getElementById("btn-0").addEventListener("click", () => setAcc(currentAccidentals));
         document.getElementById("btn-p1").addEventListener("click", () => setAcc(currentAccidentals + 1));
         document.getElementById("btn-p2").addEventListener("click", () => setAcc(currentAccidentals + 2));
 
