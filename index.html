@@ -211,7 +211,7 @@
             <label for="key-select"><strong>Key Signature:</strong></label>
             <select id="key-select"></select>
             <button id="btn-toggle-sevenths">7th</button>
-            <button id="btn-toggle-keysig" title="Switch between normal key signature and explicit C major representation">C</button>
+            <button id="btn-toggle-keysig" title="Switch between normal key signature and explicit C major representation">♮</button>
         </div>
 
         <div class="shift-grid">
@@ -275,8 +275,8 @@
         </h3>
 
         <div style="font-size: 0.88rem; line-height: 1.5; color: #334155;">
-            <p style="margin-top: 0;"><strong>C / Key Signature Button (<span style="font-family: monospace;">C</span>):</strong><br>
-            Toggles all scores between the standard key signature (showing accidental counts like <span style="font-family: monospace;">2♯</span>) and a C Major key signature (<span style="font-family: monospace;">0</span>). When set to <span style="font-family: monospace;">C</span>, all key signature accidentals are omitted from the staff, and every individual note displays its alteration explicitly.</p>
+            <p style="margin-top: 0;"><strong>Explicit Accidentals Button (<span style="font-family: monospace;">♮</span>):</strong><br>
+            Toggles all scores between the standard key signature representation (showing accidental counts like <span style="font-family: monospace;">2♯</span>) and an explicit C major key signature (<span style="font-family: monospace;">0</span>). When set to <span style="font-family: monospace;">♮</span>, all key signature accidentals are removed from the staff, and every individual note displays its alteration explicitly.</p>
 
             <p style="margin-bottom: 6px;"><strong>Triad Notation:</strong></p>
             <ul style="padding-left: 18px; margin: 0 0 12px 0;">
@@ -404,7 +404,7 @@
             const keyAcc = getKeySignatureAccidental(lIdx, accCount);
 
             let finalAlt = existingAlt || keyAcc;
-            newKeys.push(`${lname}${finalAlt}/${oct}`);
+            newKeys.push(`${lName}${finalAlt}/${oct}`);
 
             if (keyAcc && !existingAlt) {
                 while(newAcc.length <= idx) newAcc.push("");
@@ -796,7 +796,7 @@
             btn.textContent = formatAccidentalLabel(currentAccidentals);
             btn.title = "Click to revert to normal key signature representation";
         } else {
-            btn.textContent = "C";
+            btn.textContent = "♮";
             btn.title = "Click to display in C major key signature with explicit accidentals";
         }
     }
