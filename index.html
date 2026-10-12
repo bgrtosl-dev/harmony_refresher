@@ -287,6 +287,7 @@
         if (!text) return "";
         let formatted = text
             .replace(/##/g, '𝄪')
+            .replace(/x/g, '𝄪')
             .replace(/bb/g, '𝄫')
             .replace(/#/g, '♯')
             .replace(/b/g, '♭');
@@ -356,7 +357,7 @@
         for (let i = 0; i < 7; i++) {
             const lIdx = (majRootLetter + i) % 7;
             const acc = getKeySignatureAccidental(lIdx, accCount);
-            pitches.push((LETTERS[lIdx].toUpperCase() + acc).replace(/##/g, 'x'));
+            pitches.push((LETTERS[lIdx].toUpperCase() + acc));
         }
         return pitches;
     }
@@ -372,7 +373,7 @@
                 acc = getRaisedAccidental(lIdx, accCount);
                 if (acc === "n") acc = "";
             }
-            pitches.push((LETTERS[lIdx].toUpperCase() + acc).replace(/##/g, 'x'));
+            pitches.push((LETTERS[lIdx].toUpperCase() + acc));
         }
         return pitches;
     }
@@ -720,9 +721,9 @@
                 const dcrd = [...selfPitchesSet].filter(x => !targetPitchesSet.has(x));
                 const newP = [...targetPitchesSet].filter(x => !selfPitchesSet.has(x));
 
-                const discarded = dcrd.sort().join(',').replace(/##/g, 'x');
-                const added = newP.sort().join(',').replace(/##/g, 'x');
-                const scaleName = target.name.replace(/##/g, 'x');
+                const discarded = dcrd.sort().join(',');
+                const added = newP.sort().join(',');
+                const scaleName = target.name;
                 widgets.push({ discarded, added, scale: scaleName, key_sig: target.key_sig });
             }
             return widgets;
@@ -760,9 +761,9 @@
             const dcrd = [...selfPitchesSet].filter(x => !targetPitchesSet.has(x));
             const newP = [...targetPitchesSet].filter(x => !selfPitchesSet.has(x));
 
-            const discarded = dcrd.sort().join(',').replace(/##/g, 'x');
-            const added = newP.sort().join(',').replace(/##/g, 'x');
-            const scaleName = target.name.replace(/##/g, 'x');
+            const discarded = dcrd.sort().join(',');
+            const added = newP.sort().join(',');
+            const scaleName = target.name;
 
             relMinSlot0.appendChild(createRelatedButton({
                 scale: scaleName,
