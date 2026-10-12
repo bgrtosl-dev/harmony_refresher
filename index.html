@@ -273,11 +273,11 @@
             Harmony Refresher Guide
             <button id="help-close-btn" style="background: transparent; color: #64748b; border: none; font-size: 1.2rem; padding: 0 4px; cursor: pointer;">&times;</button>
         </h3>
-
+        
         <div style="font-size: 0.88rem; line-height: 1.5; color: #334155;">
             <p style="margin-top: 0;"><strong>Explicit Accidentals Button (<span style="font-family: monospace;">♮</span>):</strong><br>
             Toggles all scores between the standard key signature representation (showing accidental counts like <span style="font-family: monospace;">2♯</span>) and an explicit C major key signature (<span style="font-family: monospace;">0</span>). When set to <span style="font-family: monospace;">♮</span>, all key signature accidentals are removed from the staff, and every individual note displays its alteration explicitly.</p>
-
+            
             <p style="margin-bottom: 6px;"><strong>Triad Notation:</strong></p>
             <ul style="padding-left: 18px; margin: 0 0 12px 0;">
                 <li><strong>Uppercase Roman Numerals (I, IV, V):</strong> Major triads</li>
@@ -285,7 +285,7 @@
                 <li><strong>Diminished (<span style="font-size: 1.1em;">°</span> / <span style="font-size: 1.1em;">ø</span>):</strong> Diminished chords</li>
                 <li><strong>Augmented (<span style="font-size: 1.1em;">+</span>):</strong> Augmented triads</li>
             </ul>
-
+            
             <p style="margin-bottom: 6px;"><strong>Inversion Markers (Cadences):</strong><br>
             Indicated by dot symbols (<span style="font-family: monospace;">•</span>) beneath the chord name:
             <br>• <strong>1 dot (<span style="font-family: monospace;">•</span>):</strong> First inversion
@@ -349,7 +349,7 @@
             .replace(/bb/g, '𝄫')
             .replace(/#/g, '♯')
             .replace(/b/g, '♭');
-
+        
         formatted = formatted.replace(/maj/g, '<sub>maj</sub>').replace(/min/g, '<sub>min</sub>');
         return formatted;
     }
@@ -394,7 +394,7 @@
         if (!useC) return item;
         const newKeys = [];
         const newAcc = item.acc ? [...item.acc] : [];
-
+        
         item.keys.forEach((k, idx) => {
             const parts = k.split("/");
             const lName = parts[0][0].toLowerCase();
@@ -402,16 +402,16 @@
             const oct = parts[1];
             const lIdx = LETTERS.indexOf(lName);
             const keyAcc = getKeySignatureAccidental(lIdx, accCount);
-
+            
             let finalAlt = existingAlt || keyAcc;
             newKeys.push(`${lName}${finalAlt}/${oct}`);
-
+            
             if (keyAcc && !existingAlt) {
                 while(newAcc.length <= idx) newAcc.push("");
                 if (!newAcc[idx]) newAcc[idx] = keyAcc;
             }
         });
-
+        
         return {
             ...item,
             keys: newKeys,
@@ -667,17 +667,23 @@
 
     function drawCadenceRow(ctx, cadenceData, startY, modeLabel, keySig, availWidth) {
         const rowHeight = CONFIG.CADENCE_ROW_HEIGHT;
+        const isPortrait = window.matchMedia("(orientation: portrait)").matches || availWidth < 500;
+        
+        const colsPerRow = isPortrait ? 1 : 2;
+        const totalRows = isPortrait ? 4 : 2;
         const margin = 10;
-        const colGap = CONFIG.CADENCE_COL_GAP;
+        const colGap = isPortrait ? 0 : CONFIG.CADENCE_COL_GAP;
 
-        const fullColWidth = Math.floor((availWidth - 20 - colGap) / 2);
-        const barWidth = Math.min(CONFIG.CADENCE_MAX_BAR_WIDTH, fullColWidth);
+        const fullColWidth = isPortrait ? (availWidth - 20) : Math.floor((availWidth - 20 - colGap) / 2);
+        const barWidth = isPortrait ? Math.min(CONFIG.CADENCE_MAX_BAR_WIDTH + 40, fullColWidth) : Math.min(CONFIG.CADENCE_MAX_BAR_WIDTH, fullColWidth);
 
         let currentY = startY;
 
-        for (let r = 0; r < 2; r++) {
-            for (let c = 0; c < 2; c++) {
-                const idx = r * 2 + c;
+        for (let r = 0; r < totalRows; r++) {
+            for (let c = 0; c < colsPerRow; c++) {
+                const idx = r * colsPerRow + c;
+                if (idx >= cadenceData.length) break;
+
                 const xPos = margin + c * (fullColWidth + colGap);
 
                 const stave = new Vex.Flow.Stave(xPos, currentY, barWidth);
@@ -727,7 +733,7 @@
                 ctx.restore();
             }
 
-            if (r === 0) {
+            if (r < totalRows - 1) {
                 const midRowY = currentY + rowHeight - 35;
                 ctx.save();
                 ctx.beginPath();
@@ -748,14 +754,14 @@
     function createRelatedButton(w) {
         const btn = document.createElement("button");
         btn.className = "btn-related";
-
+        
         const scaleText = formatUnicodeAccidentals(w.scale);
         const discardedText = formatUnicodeAccidentals(w.discarded);
         const addedText = formatUnicodeAccidentals(w.added);
 
         btn.innerHTML = `${scaleText}: ${discardedText} ⇒ ${addedText}`;
         btn.title = `Discarded: [${w.discarded}], Added: [${w.added}]`;
-
+        
         btn.addEventListener("click", () => {
             currentAccidentals = w.key_sig;
             const select = document.getElementById("key-select");
@@ -878,7 +884,7 @@
 
         renderRowSlots("target-p1", getWidgetsForAcc(currentAccidentals + 1));
         renderRowSlots("target-p2", getWidgetsForAcc(currentAccidentals + 2));
-
+        
         updateShiftButtons();
         updateKeySigButtonText();
     }
@@ -941,8 +947,11 @@
         if (!cadDiv) return;
         cadDiv.innerHTML = "";
 
+        const isPortrait = window.matchMedia("(orientation: portrait)").matches || availWidth < 500;
+        const cadHeight = isPortrait ? 1800 : 950;
+
         const renderer3 = new Vex.Flow.Renderer(cadDiv, Vex.Flow.Renderer.Backends.SVG);
-        renderer3.resize(availWidth, 950);
+        renderer3.resize(availWidth, cadHeight);
         const ctx3 = renderer3.getContext();
 
         let nextY = drawCadenceRow(ctx3, data.maj_cadences, 35, "Major", data.key_sig, availWidth);
