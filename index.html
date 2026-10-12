@@ -195,6 +195,7 @@
             <label for="key-select"><strong>Key Signature:</strong></label>
             <select id="key-select"></select>
             <button id="btn-toggle-sevenths">7th</button>
+            <button id="btn-toggle-keysig" title="Switch between normal key signature and explicit C major representation">C</button>
         </div>
 
         <div class="shift-grid">
@@ -282,6 +283,7 @@
 
     let currentAccidentals = 0;
     let showSevenths = false;
+    let useCKeySignature = false;
 
     function formatUnicodeAccidentals(text) {
         if (!text) return "";
@@ -303,7 +305,7 @@
     }
 
     function formatAccidentalLabel(acc) {
-        if (acc === 0) return "";
+        if (acc === 0) return "0";
         if (acc > 0) return `${acc}♯`;
         return `${Math.abs(acc)}♭`;
     }
@@ -332,7 +334,36 @@
         return 3;
     }
 
-    function generateMajorScale(rootLetterIdx, show7ths) {
+    function processItemForCMode(item, accCount, useC) {
+        if (!useC) return item;
+        const newKeys = [];
+        const newAcc = item.acc ? [...item.acc] : [];
+
+        item.keys.forEach((k, idx) => {
+            const parts = k.split("/");
+            const lName = parts[0][0].toLowerCase();
+            const existingAlt = parts[0].slice(1);
+            const oct = parts[1];
+            const lIdx = LETTERS.indexOf(lName);
+            const keyAcc = getKeySignatureAccidental(lIdx, accCount);
+
+            let finalAlt = existingAlt || keyAcc;
+            newKeys.push(`${lName}${finalAlt}/${oct}`);
+
+            if (keyAcc && !existingAlt) {
+                while(newAcc.length <= idx) newAcc.push("");
+                if (!newAcc[idx]) newAcc[idx] = keyAcc;
+            }
+        });
+
+        return {
+            ...item,
+            keys: newKeys,
+            acc: newAcc.length > 0 ? newAcc : undefined
+        };
+    }
+
+    function generateMajorScale(rootLetterIdx, show7ths, accCount, useC) {
         const notes = [];
         const baseOct = getLowestBOctave(rootLetterIdx);
         const labels = show7ths ? MAJOR_SEVENTHS : MAJOR_TRIADS;
@@ -343,10 +374,11 @@
             let octave = baseOct + Math.floor(totalL / 7);
             if (octave < 3 || (octave === 3 && lIdx < 6)) octave += 1;
 
-            notes.push({
+            const item = {
                 keys: [`${LETTERS[lIdx]}/${octave}`],
                 triad: labels[i]
-            });
+            };
+            notes.push(processItemForCMode(item, accCount, useC));
         }
         return notes;
     }
@@ -378,7 +410,7 @@
         return pitches;
     }
 
-    function generateMelodicMinorUp(minRootLetterIdx, accCount, show7ths) {
+    function generateMelodicMinorUp(minRootLetterIdx, accCount, show7ths, useC) {
         const notes = [];
         const baseOct = getLowestBOctave(minRootLetterIdx);
         const labels = show7ths ? MELODIC_MINOR_SEVENTHS : MELODIC_MINOR_TRIADS;
@@ -394,14 +426,16 @@
                 triad: labels[i]
             };
             if (i === 5 || i === 6) {
-                noteObj.acc = [getRaisedAccidental(lIdx, accCount)];
+                const raisedAcc = getRaisedAccidental(lIdx, accCount);
+                noteObj.keys = [`${LETTERS[lIdx]}${raisedAcc === 'n' ? '' : raisedAcc}/${octave}`];
+                noteObj.acc = [raisedAcc === 'n' ? 'n' : raisedAcc];
             }
-            notes.push(noteObj);
+            notes.push(processItemForCMode(noteObj, accCount, useC));
         }
         return notes;
     }
 
-    function generateHarmonicMinorScale(minRootLetterIdx, accCount, show7ths) {
+    function generateHarmonicMinorScale(minRootLetterIdx, accCount, show7ths, useC) {
         const notes = [];
         const baseOct = getLowestBOctave(minRootLetterIdx);
         const labels = show7ths ? HARMONIC_MINOR_SEVENTHS : HARMONIC_MINOR_TRIADS;
@@ -417,9 +451,11 @@
                 triad: labels[i]
             };
             if (i === 6) {
-                noteObj.acc = [getRaisedAccidental(lIdx, accCount)];
+                const raisedAcc = getRaisedAccidental(lIdx, accCount);
+                noteObj.keys = [`${LETTERS[lIdx]}${raisedAcc === 'n' ? '' : raisedAcc}/${octave}`];
+                noteObj.acc = [raisedAcc === 'n' ? 'n' : raisedAcc];
             }
-            notes.push(noteObj);
+            notes.push(processItemForCMode(noteObj, accCount, useC));
         }
         return notes;
     }
@@ -437,7 +473,7 @@
         return `${LETTERS[newLIdx]}${alt}/${oct + octShift}`;
     }
 
-    function buildPythonCadenceChord(seqList, label, inv, degreeShift, customAccs = null) {
+    function buildPythonCadenceChord(seqList, label, inv, degreeShift, customAccs = null, accCount = 0, useC = false) {
         let keys = seqList.map(n => transposeNote(n, degreeShift));
 
         const letterMap = { c: 0, d: 1, e: 2, f: 3, g: 4, a: 5, b: 6 };
@@ -460,68 +496,68 @@
             minW = Math.min(...keys.map(getWeight));
         }
 
-        const res = { keys, label, inv };
+        let res = { keys, label, inv };
         if (customAccs) res.acc = customAccs;
-        return res;
+        return processItemForCMode(res, accCount, useC);
     }
 
-    function computeKeyData(accCount, show7ths) {
+    function computeKeyData(accCount, show7ths, useC) {
         const keyInfo = KEY_NAMES[accCount];
         const majName = keyInfo[0];
 
         const majRootLetter = ((accCount * 4) % 7 + 7) % 7;
         const minRootLetter = (majRootLetter + 5) % 7;
 
-        const majScale = generateMajorScale(majRootLetter, show7ths);
-        const minUp = generateMelodicMinorUp(minRootLetter, accCount, show7ths);
-        const harmonicAsc = generateHarmonicMinorScale(minRootLetter, accCount, show7ths);
+        const majScale = generateMajorScale(majRootLetter, show7ths, accCount, useC);
+        const minUp = generateMelodicMinorUp(minRootLetter, accCount, show7ths, useC);
+        const harmonicAsc = generateHarmonicMinorScale(minRootLetter, accCount, show7ths, useC);
 
         const majDegreeShift = majRootLetter;
         const minDegreeShift = (minRootLetter - 5 + 7) % 7;
 
         const majCadences = [
             [
-                buildPythonCadenceChord(["d/4", "g/4", "b/4"], "V", 2, majDegreeShift),
-                buildPythonCadenceChord(["c/4", "e/4", "g/4"], "I", 0, majDegreeShift)
+                buildPythonCadenceChord(["d/4", "g/4", "b/4"], "V", 2, majDegreeShift, null, accCount, useC),
+                buildPythonCadenceChord(["c/4", "e/4", "g/4"], "I", 0, majDegreeShift, null, accCount, useC)
             ],
             [
-                buildPythonCadenceChord(["c/4", "f/4", "a/4"], "IV", 2, majDegreeShift),
-                buildPythonCadenceChord(["c/4", "e/4", "g/4"], "I", 0, majDegreeShift)
+                buildPythonCadenceChord(["c/4", "f/4", "a/4"], "IV", 2, majDegreeShift, null, accCount, useC),
+                buildPythonCadenceChord(["c/4", "e/4", "g/4"], "I", 0, majDegreeShift, null, accCount, useC)
             ],
             [
-                buildPythonCadenceChord(["g/3", "b/3", "d/4"], "V", 0, majDegreeShift),
-                buildPythonCadenceChord(["a/3", "c/4", "e/4"], "vi", 0, majDegreeShift)
+                buildPythonCadenceChord(["g/3", "b/3", "d/4"], "V", 0, majDegreeShift, null, accCount, useC),
+                buildPythonCadenceChord(["a/3", "c/4", "e/4"], "vi", 0, majDegreeShift, null, accCount, useC)
             ],
             [
-                buildPythonCadenceChord(["e/4", "g/4", "c/5"], "I", 1, majDegreeShift),
-                buildPythonCadenceChord(["g/3", "b/3", "d/4"], "V", 0, majDegreeShift)
+                buildPythonCadenceChord(["e/4", "g/4", "c/5"], "I", 1, majDegreeShift, null, accCount, useC),
+                buildPythonCadenceChord(["g/3", "b/3", "d/4"], "V", 0, majDegreeShift, null, accCount, useC)
             ]
         ];
 
-        const vAcc = ["", "", getRaisedAccidental(4, accCount)];
-        const vAccChord1 = ["", getRaisedAccidental(4, accCount), ""];
+        let vAcc = ["", "", getRaisedAccidental(4, accCount)];
+        let vAccChord1 = ["", getRaisedAccidental(4, accCount), ""];
 
         const minCadences = [
             [
-                buildPythonCadenceChord(["b/3", "e/4", "g/4"], "V", 2, minDegreeShift, vAcc),
-                buildPythonCadenceChord(["a/3", "c/4", "e/4"], "i", 0, minDegreeShift)
+                buildPythonCadenceChord(["b/3", "e/4", "g/4"], "V", 2, minDegreeShift, vAcc, accCount, useC),
+                buildPythonCadenceChord(["a/3", "c/4", "e/4"], "i", 0, minDegreeShift, null, accCount, useC)
             ],
             [
-                buildPythonCadenceChord(["a/3", "d/4", "f/4"], "iv", 2, minDegreeShift),
-                buildPythonCadenceChord(["a/3", "c/4", "e/4"], "i", 0, minDegreeShift)
+                buildPythonCadenceChord(["a/3", "d/4", "f/4"], "iv", 2, minDegreeShift, null, accCount, useC),
+                buildPythonCadenceChord(["a/3", "c/4", "e/4"], "i", 0, minDegreeShift, null, accCount, useC)
             ],
             [
-                buildPythonCadenceChord(["e/3", "g/3", "b/3"], "V", 0, minDegreeShift, vAccChord1),
-                buildPythonCadenceChord(["f/3", "a/3", "c/4"], "VI", 0, minDegreeShift)
+                buildPythonCadenceChord(["e/3", "g/3", "b/3"], "V", 0, minDegreeShift, vAccChord1, accCount, useC),
+                buildPythonCadenceChord(["f/3", "a/3", "c/4"], "VI", 0, minDegreeShift, null, accCount, useC)
             ],
             [
-                buildPythonCadenceChord(["a/3", "c/4", "e/4"], "i", 0, minDegreeShift),
-                buildPythonCadenceChord(["b/3", "e/4", "g/4"], "V", 2, minDegreeShift, vAcc)
+                buildPythonCadenceChord(["a/3", "c/4", "e/4"], "i", 0, minDegreeShift, null, accCount, useC),
+                buildPythonCadenceChord(["b/3", "e/4", "g/4"], "V", 2, minDegreeShift, vAcc, accCount, useC)
             ]
         ];
 
         return {
-            key_sig: majName,
+            key_sig: useC ? "C" : majName,
             maj_scale: majScale,
             min_up: minUp,
             harmonic_asc: harmonicAsc,
@@ -697,6 +733,18 @@
         setBtnState(document.getElementById("btn-p2"), currentAccidentals + 2);
     }
 
+    function updateKeySigButtonText() {
+        const btn = document.getElementById("btn-toggle-keysig");
+        if (!btn) return;
+        if (useCKeySignature) {
+            btn.textContent = formatAccidentalLabel(currentAccidentals);
+            btn.title = "Click to revert to normal key signature representation";
+        } else {
+            btn.textContent = "C";
+            btn.title = "Click to display in C major key signature with explicit accidentals";
+        }
+    }
+
     function renderRelatedTonalities() {
         const currentScalePitches = getMajorScalePitches(currentAccidentals);
         const selfPitchesSet = new Set(currentScalePitches);
@@ -746,7 +794,6 @@
         renderRowSlots("target-m2", getWidgetsForAcc(currentAccidentals - 2));
         renderRowSlots("target-m1", getWidgetsForAcc(currentAccidentals - 1));
 
-        // Current Key Signature Row (middle row): Only shows relative minor
         const relMinSlot0 = document.getElementById("target-relmin-0");
         const relMinSlot1 = document.getElementById("target-relmin-1");
         if (relMinSlot0) relMinSlot0.innerHTML = "";
@@ -777,6 +824,7 @@
         renderRowSlots("target-p2", getWidgetsForAcc(currentAccidentals + 2));
 
         updateShiftButtons();
+        updateKeySigButtonText();
     }
 
     function renderAll() {
@@ -790,7 +838,7 @@
         document.getElementById("label-harmonic-minor").textContent = `${minName} Harmonic Minor Scale`;
         document.getElementById("label-melodic-minor").textContent = `${minName} Melodic Minor Scale`;
 
-        const data = computeKeyData(currentAccidentals, showSevenths);
+        const data = computeKeyData(currentAccidentals, showSevenths, useCKeySignature);
 
         const majDiv = document.getElementById("major-score");
         if (!majDiv) return;
@@ -899,6 +947,13 @@
         toggleBtn.addEventListener("click", () => {
             showSevenths = !showSevenths;
             toggleBtn.textContent = showSevenths ? "Triads" : "7th";
+            renderAll();
+        });
+
+        const keysigBtn = document.getElementById("btn-toggle-keysig");
+        keysigBtn.addEventListener("click", () => {
+            useCKeySignature = !useCKeySignature;
+            updateKeySigButtonText();
             renderAll();
         });
 
