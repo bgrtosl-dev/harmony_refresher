@@ -208,7 +208,7 @@
 
     <div class="controls-card">
         <div class="control-group controls-top-row">
-            <label for="key-select"><strong>Key Signature:</strong></label>
+            <label for="key-select"><strong>Key Sig. </strong></label>
             <select id="key-select"></select>
             <button id="btn-toggle-sevenths">7th</button>
             <button id="btn-toggle-keysig" title="Switch between normal key signature and explicit C major representation">♮</button>
@@ -273,11 +273,11 @@
             Harmony Refresher Guide
             <button id="help-close-btn" style="background: transparent; color: #64748b; border: none; font-size: 1.2rem; padding: 0 4px; cursor: pointer;">&times;</button>
         </h3>
-        
+
         <div style="font-size: 0.88rem; line-height: 1.5; color: #334155;">
             <p style="margin-top: 0;"><strong>Explicit Accidentals Button (<span style="font-family: monospace;">♮</span>):</strong><br>
             Toggles all scores between the standard key signature representation (showing accidental counts like <span style="font-family: monospace;">2♯</span>) and an explicit C major key signature (<span style="font-family: monospace;">0</span>). When set to <span style="font-family: monospace;">♮</span>, all key signature accidentals are removed from the staff, and every individual note displays its alteration explicitly.</p>
-            
+
             <p style="margin-bottom: 6px;"><strong>Triad Notation:</strong></p>
             <ul style="padding-left: 18px; margin: 0 0 12px 0;">
                 <li><strong>Uppercase Roman Numerals (I, IV, V):</strong> Major triads</li>
@@ -285,7 +285,7 @@
                 <li><strong>Diminished (<span style="font-size: 1.1em;">°</span> / <span style="font-size: 1.1em;">ø</span>):</strong> Diminished chords</li>
                 <li><strong>Augmented (<span style="font-size: 1.1em;">+</span>):</strong> Augmented triads</li>
             </ul>
-            
+
             <p style="margin-bottom: 6px;"><strong>Inversion Markers (Cadences):</strong><br>
             Indicated by dot symbols (<span style="font-family: monospace;">•</span>) beneath the chord name:
             <br>• <strong>1 dot (<span style="font-family: monospace;">•</span>):</strong> First inversion
@@ -349,7 +349,7 @@
             .replace(/bb/g, '𝄫')
             .replace(/#/g, '♯')
             .replace(/b/g, '♭');
-        
+
         formatted = formatted.replace(/maj/g, '<sub>maj</sub>').replace(/min/g, '<sub>min</sub>');
         return formatted;
     }
@@ -394,7 +394,7 @@
         if (!useC) return item;
         const newKeys = [];
         const newAcc = item.acc ? [...item.acc] : [];
-        
+
         item.keys.forEach((k, idx) => {
             const parts = k.split("/");
             const lName = parts[0][0].toLowerCase();
@@ -402,16 +402,16 @@
             const oct = parts[1];
             const lIdx = LETTERS.indexOf(lName);
             const keyAcc = getKeySignatureAccidental(lIdx, accCount);
-            
+
             let finalAlt = existingAlt || keyAcc;
             newKeys.push(`${lName}${finalAlt}/${oct}`);
-            
+
             if (keyAcc && !existingAlt) {
                 while(newAcc.length <= idx) newAcc.push("");
                 if (!newAcc[idx]) newAcc[idx] = keyAcc;
             }
         });
-        
+
         return {
             ...item,
             keys: newKeys,
@@ -668,7 +668,7 @@
     function drawCadenceRow(ctx, cadenceData, startY, modeLabel, keySig, availWidth) {
         const rowHeight = CONFIG.CADENCE_ROW_HEIGHT;
         const isPortrait = window.matchMedia("(orientation: portrait)").matches || availWidth < 500;
-        
+
         const colsPerRow = isPortrait ? 1 : 2;
         const totalRows = isPortrait ? 4 : 2;
         const margin = 10;
@@ -754,14 +754,14 @@
     function createRelatedButton(w) {
         const btn = document.createElement("button");
         btn.className = "btn-related";
-        
+
         const scaleText = formatUnicodeAccidentals(w.scale);
         const discardedText = formatUnicodeAccidentals(w.discarded);
         const addedText = formatUnicodeAccidentals(w.added);
 
         btn.innerHTML = `${scaleText}: ${discardedText} ⇒ ${addedText}`;
         btn.title = `Discarded: [${w.discarded}], Added: [${w.added}]`;
-        
+
         btn.addEventListener("click", () => {
             currentAccidentals = w.key_sig;
             const select = document.getElementById("key-select");
@@ -884,7 +884,7 @@
 
         renderRowSlots("target-p1", getWidgetsForAcc(currentAccidentals + 1));
         renderRowSlots("target-p2", getWidgetsForAcc(currentAccidentals + 2));
-        
+
         updateShiftButtons();
         updateKeySigButtonText();
     }
