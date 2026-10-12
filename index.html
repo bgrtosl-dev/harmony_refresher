@@ -208,7 +208,7 @@
 
     <div class="controls-card">
         <div class="control-group controls-top-row">
-            <label for="key-select"><strong>Key Sig. </strong></label>
+            <label for="key-select"><strong>Key Signature:</strong></label>
             <select id="key-select"></select>
             <button id="btn-toggle-sevenths">7th</button>
             <button id="btn-toggle-keysig" title="Switch between normal key signature and explicit C major representation">♮</button>
@@ -643,7 +643,12 @@
         const beam = new Beam(notes);
         const voice = new Voice({ num_beats: 3.5, beat_value: 4 }).setStrict(false).addTickables(notes);
 
-        new Formatter().joinVoices([voice]).format([voice], stave.getWidth() - 90);
+        // Dynamically adjust padding to ensure dense key signatures (5+ accidentals) are never truncated on narrow screens
+        const keySigAccidentals = Math.abs(currentAccidentals);
+        const formatPadding = keySigAccidentals >= 5 ? 120 : (keySigAccidentals >= 3 ? 105 : 90);
+        const fillWidth = Math.max(stave.getWidth() - formatPadding, 180);
+
+        new Formatter().joinVoices([voice]).format([voice], fillWidth);
 
         voice.draw(ctx, stave);
         beam.setContext(ctx).draw();
@@ -905,14 +910,14 @@
         const majDiv = document.getElementById("major-score");
         if (!majDiv) return;
         majDiv.innerHTML = "";
-        const availWidth = Math.min(Math.max(majDiv.clientWidth - 10, 320), 750);
-        const scaleWidth = availWidth - 20;
+        const availWidth = Math.min(Math.max(majDiv.clientWidth - 10, 280), 750);
+        const scaleWidth = availWidth - 10;
 
         const renderer1 = new Vex.Flow.Renderer(majDiv, Vex.Flow.Renderer.Backends.SVG);
         renderer1.resize(availWidth, CONFIG.SCALE_BOX_HEIGHT);
         const ctx1 = renderer1.getContext();
 
-        const sMaj = new Vex.Flow.Stave(10, 15, scaleWidth);
+        const sMaj = new Vex.Flow.Stave(5, 15, scaleWidth);
         sMaj.addClef("treble").addKeySignature(data.key_sig);
         sMaj.setContext(ctx1).draw();
         drawBeamedMeasure(ctx1, sMaj, data.maj_scale);
@@ -924,7 +929,7 @@
             rendererHar.resize(availWidth, CONFIG.SCALE_BOX_HEIGHT);
             const ctxHar = rendererHar.getContext();
 
-            const sHar = new Vex.Flow.Stave(10, 15, scaleWidth);
+            const sHar = new Vex.Flow.Stave(5, 15, scaleWidth);
             sHar.addClef("treble").addKeySignature(data.key_sig);
             sHar.setContext(ctxHar).draw();
             drawBeamedMeasure(ctxHar, sHar, data.harmonic_asc);
@@ -937,7 +942,7 @@
             rendererMel.resize(availWidth, CONFIG.SCALE_BOX_HEIGHT);
             const ctxMel = rendererMel.getContext();
 
-            const sMel = new Vex.Flow.Stave(10, 15, scaleWidth);
+            const sMel = new Vex.Flow.Stave(5, 15, scaleWidth);
             sMel.addClef("treble").addKeySignature(data.key_sig);
             sMel.setContext(ctxMel).draw();
             drawBeamedMeasure(ctxMel, sMel, data.min_up);
